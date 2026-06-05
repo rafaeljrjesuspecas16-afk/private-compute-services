@@ -48,7 +48,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import com.google.fcp.client.privatelogger.LogEntry;
 import com.google.fcp.client.privatelogger.impl.DataProvider;
-import com.google.intelligence.fcp.confidentialcompute.AccessPolicyEndorsementOptions;
+import com.google.protobuf.ByteString;
 import dagger.hilt.android.qualifiers.ApplicationContext;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -347,7 +347,7 @@ public class PrivateLoggerGrpcBindableService
             return getDataFuture;
           };
 
-      AccessPolicyEndorsementOptions endorsementOptions =
+      byte[] endorsementOptions =
           endorsementOptionsProvider.getEndorsementOptions(
               context, EndorsementClientType.PRIVATE_COMPUTE_SERVICES_DEFAULT_KEY);
 
@@ -355,7 +355,7 @@ public class PrivateLoggerGrpcBindableService
           FcpInvocationOptions.builder()
               .setSessionName(request.getPrivateLogSourceName())
               .setPopulationName(request.getPrivateLogSourceName())
-              .setAccessPolicyEndorsementOptions(endorsementOptions)
+              .setAccessPolicyEndorsementOptions(ByteString.copyFrom(endorsementOptions))
               .build();
 
       final List<UploadOutcome> outcomes = Collections.synchronizedList(new ArrayList<>());

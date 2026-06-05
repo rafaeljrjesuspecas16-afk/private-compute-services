@@ -30,6 +30,7 @@ import com.google.android.`as`.oss.privateinference.library.bsa.token.cache.Toke
 import com.google.android.`as`.oss.privateinference.library.bsa.token.cache.TokenPoolSource
 import com.google.android.`as`.oss.privateinference.library.bsa.token.crypto.BsaTokenCipher
 import com.google.android.`as`.oss.privateinference.logging.PcsStatsLogger
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -77,7 +78,9 @@ class DatabaseTokenPool<T : BsaToken>(
   private val refillLock = Mutex()
   // The number of tokens drawn outside of the pool if the cache is empty. This is used to calculate
   // the token utilization ratio and only applies to the asynchronous cache refill mode.
-  private var excessDrawCount = 0
+  private val excessDrawCount = AtomicInteger(0)
+  // The number of tokens that have been refilled in the cache within the refresh cycle.
+  private val refilledTokens = AtomicInteger(0)
 
   override suspend fun draw(
     params: BsaTokenParams<T>,
@@ -102,18 +105,18 @@ class DatabaseTokenPool<T : BsaToken>(
         resultTokens.addAll(
           fallbackSource(params, resultTokensNeeded, BsaTokenDao.tokenValidator(timeSource))
         )
-        excessDrawCount += resultTokensNeeded
+        excessDrawCount.addAndGet(resultTokensNeeded)
       }
       // Asynchronously fetch tokens to refill the cache, if there isn't a refill already in
       // progress.
       coroutineScope.launch {
         if (dbTokensNeeded > 0 && refillLock.tryLock()) {
           try {
-            val refillTokens =
+            val newTokens =
               fallbackSource(params, dbTokensNeeded, BsaTokenDao.tokenValidator(timeSource))
-            dbLock.withLock {
-              daoProvider().insertAll(refillTokens.mapNotNull { encrypt(params, it) })
-            }
+            refilledTokens.addAndGet(dbTokensNeeded)
+            val encryptedEntities = newTokens.mapNotNull { encrypt(params, it) }
+            dbLock.withLock { daoProvider().insertAll(encryptedEntities) }
           } finally {
             refillLock.unlock()
           }
@@ -122,6 +125,7 @@ class DatabaseTokenPool<T : BsaToken>(
     } else {
       val totalTokensNeeded = resultTokensNeeded + dbTokensNeeded
       if (totalTokensNeeded > 0) {
+        refilledTokens.addAndGet(totalTokensNeeded)
         val newTokens =
           fallbackSource(params, totalTokensNeeded, BsaTokenDao.tokenValidator(timeSource))
         resultTokens += newTokens.take(resultTokensNeeded)
@@ -138,8 +142,9 @@ class DatabaseTokenPool<T : BsaToken>(
 
   override suspend fun refresh(refillSource: TokenPoolSource<T>) = dbLock.withLock {
     pcsStatsLogger.logEventValue(tokenUtilizationMetricId, calculateUtilizationRatio())
-    // Reset the excess draw count during each refresh.
-    excessDrawCount = 0
+    // Reset the counts during each refresh.
+    excessDrawCount.set(0)
+    refilledTokens.set(0)
     daoProvider().deleteAll(refreshParams)
     val toInsert = refreshParams.flatMap { params ->
       refillSource(params, preferredPoolSize, BsaTokenDao.tokenValidator(timeSource)).mapNotNull {
@@ -152,8 +157,11 @@ class DatabaseTokenPool<T : BsaToken>(
   private suspend fun calculateUtilizationRatio(): Int {
     check(dbLock.isLocked) { "calculateUtilizationRatio must be called within dbLock" }
     val params = refreshParams.firstOrNull() ?: return 0
-    val drawCount = (preferredPoolSize - daoProvider().getPoolSize(params)) + excessDrawCount
-    val totalCount = preferredPoolSize + excessDrawCount
+    val drawCount =
+      (preferredPoolSize - daoProvider().getPoolSize(params)) +
+        excessDrawCount.get() +
+        refilledTokens.get()
+    val totalCount = preferredPoolSize + excessDrawCount.get() + refilledTokens.get()
     return if (totalCount == 0) 0 else (drawCount * 100) / totalCount
   }
 

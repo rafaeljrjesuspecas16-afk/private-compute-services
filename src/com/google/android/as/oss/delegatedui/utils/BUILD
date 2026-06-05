@@ -100,6 +100,7 @@ android_library(
     srcs = ["SerializableBitmap.kt"],
     deps = [
         "//third_party/java/androidx/core/ktx",
+        "@maven//:androidx_core_core",
         "@maven//:com_google_protobuf_protobuf_javalite",
     ],
 )

@@ -25,6 +25,7 @@ import com.google.android.as.oss.privateinference.Annotations.PrivateInferenceAt
 import com.google.android.as.oss.privateinference.Annotations.PrivateInferenceEnableArateaTokenCache;
 import com.google.android.as.oss.privateinference.Annotations.PrivateInferenceEnableAsyncTokenCacheRefill;
 import com.google.android.as.oss.privateinference.Annotations.PrivateInferenceEndpointUrl;
+import com.google.android.as.oss.privateinference.Annotations.PrivateInferenceForceIpTunnelCreationForEverySession;
 import com.google.android.as.oss.privateinference.Annotations.PrivateInferenceWaitForGrpcChannelReady;
 import com.google.android.as.oss.privateinference.Annotations.TokenIssuanceEndpointUrl;
 import com.google.android.as.oss.privateinference.config.PrivateInferenceConfig;
@@ -116,6 +117,13 @@ interface PrivateInferenceConfigModule {
   static boolean providesEnableAsyncTokenCacheRefill(
       ConfigReader<PrivateInferenceConfig> configReader) {
     return configReader.getConfig().enableAsyncTokenCacheRefill();
+  }
+
+  @Provides
+  @PrivateInferenceForceIpTunnelCreationForEverySession
+  static boolean providesForceIpTunnelCreationForEverySession(
+      ConfigReader<PrivateInferenceConfig> configReader) {
+    return false;
   }
 
   @Provides

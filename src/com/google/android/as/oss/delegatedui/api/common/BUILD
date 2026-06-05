@@ -27,6 +27,7 @@ package(
 proto_library(
     name = "common_proto",
     srcs = ["common.proto"],
+    option_deps = ["//third_party/protobuf:cpp_features_proto"],
     deps = [],
 )
 

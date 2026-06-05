@@ -17,7 +17,7 @@
 package com.google.android.as.oss.fl.fc.service.scheduler;
 
 import com.google.auto.value.AutoValue;
-import com.google.intelligence.fcp.confidentialcompute.AccessPolicyEndorsementOptions;
+import com.google.protobuf.ByteString;
 
 /** Options for Fcp Invocation. */
 @AutoValue
@@ -27,7 +27,7 @@ public abstract class FcpInvocationOptions {
 
   public abstract String populationName();
 
-  public abstract AccessPolicyEndorsementOptions accessPolicyEndorsementOptions();
+  public abstract ByteString accessPolicyEndorsementOptions();
 
   public static Builder builder() {
     return new AutoValue_FcpInvocationOptions.Builder();
@@ -40,7 +40,7 @@ public abstract class FcpInvocationOptions {
 
     public abstract Builder setPopulationName(String populationName);
 
-    public abstract Builder setAccessPolicyEndorsementOptions(AccessPolicyEndorsementOptions o);
+    public abstract Builder setAccessPolicyEndorsementOptions(ByteString o);
 
     public abstract FcpInvocationOptions build();
   }

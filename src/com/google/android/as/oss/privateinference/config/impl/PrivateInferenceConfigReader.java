@@ -207,6 +207,8 @@ class PrivateInferenceConfigReader extends AbstractConfigReader<PrivateInference
         .setTokenIssuanceEndpointUrl(getTokenIssuanceEndpointUrl(isEvt, isUserDebug))
         .setArateaAuthMode(PrivateInferenceConfig.DEFAULT_ARATEA_AUTH_MODE)
         .setProxyAuthMode(PrivateInferenceConfig.DEFAULT_PROXY_AUTH_MODE)
+        .setForceIpTunnelCreationForEverySession(
+            PrivateInferenceConfig.DEFAULT_FORCE_IP_TUNNEL_CREATION_FOR_EVERY_SESSION)
         // Flags that can be overridden via Device Config flags.
         .setEnabled(flagManager.get(ENABLED_FLAG))
         .setEnableArateaTokenCache(flagManager.get(ENABLE_ARATEA_TOKEN_CACHE))

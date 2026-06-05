@@ -69,7 +69,7 @@ enum IntegrationCapability {
   TEXT_QUERY_CAPABILITY = 3;
 
   // Enables text query fulfillment with automation
-  TEXT_QUERY_WITH_AUTOMATION_CAPABILITY = 5;
+  TEXT_QUERY_WITH_AUTOMATION_CAPABILITY = 6;
 }
 
 message AvailabilityResponse {

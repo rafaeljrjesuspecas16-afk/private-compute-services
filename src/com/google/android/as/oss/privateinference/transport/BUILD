@@ -31,10 +31,7 @@ android_library(
 android_library(
     name = "proxy_config_manager",
     srcs = ["ProxyConfigManager.kt"],
-    deps = [
-        ":transport",
-        "@maven//:com_google_guava_guava",
-    ],
+    deps = [":transport"],
 )
 
 android_library(

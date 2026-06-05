@@ -25,7 +25,6 @@ android_library(
         "//src/com/google/android/as/oss/common:annotation",
         "//src/com/google/android/as/oss/common/config",
         "//src/com/google/android/as/oss/conversationid/config",
-        "@maven//:androidx_annotation_annotation",
         "@maven//:com_google_dagger_dagger",
         "@maven//:com_google_dagger_hilt-android",
         "@maven//:javax_inject_javax_inject",

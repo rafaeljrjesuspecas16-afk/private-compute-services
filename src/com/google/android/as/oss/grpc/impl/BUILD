@@ -45,10 +45,8 @@ android_library(
     deps = [
         ":policies",
         "//src/com/google/android/as/oss/common/config",
-        "//src/com/google/android/as/oss/common/security/api:package_security_info_kt_proto_lite",
         "//src/com/google/android/as/oss/common/security/config",
         "//src/com/google/android/as/oss/grpc:api",
-        "@maven//:androidx_annotation_annotation",
         "@maven//:androidx_lifecycle_lifecycle_service",
         "@maven//:com_google_dagger_dagger",
         "@maven//:com_google_dagger_hilt-android",

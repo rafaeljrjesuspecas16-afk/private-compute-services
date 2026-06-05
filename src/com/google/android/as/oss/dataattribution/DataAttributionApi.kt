@@ -65,7 +65,7 @@ object DataAttributionApi {
     }
 
     val intent =
-      Intent(Intent.ACTION_MAIN).apply {
+      Intent(Intent.ACTION_VIEW).apply {
         setComponent(ComponentName(PCS_PKG_NAME, DATA_ATTRIBUTION_ACTIVITY_NAME))
         // FLAG_ACTIVITY_NEW_TASK: Needed to start an Activity outside of an Activity context.
         // FLAG_ACTIVITY_CLEAR_TASK: Fix for old Activity being reused.

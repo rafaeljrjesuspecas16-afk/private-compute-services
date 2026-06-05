@@ -22,6 +22,7 @@ android_library(
         "ExpressiveMotionUtils.kt",
     ],
     deps = [
+        "//third_party/java/androidx/compose/animation/animation_core",
         "//third_party/java/androidx/compose/foundation",
         "//third_party/java/androidx/compose/foundation/layout",
         "//third_party/java/androidx/compose/material3",

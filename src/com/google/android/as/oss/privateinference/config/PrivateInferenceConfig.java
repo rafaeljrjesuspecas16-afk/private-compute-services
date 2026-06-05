@@ -50,6 +50,7 @@ public abstract class PrivateInferenceConfig {
             DEFAULT_PROXY_TOKEN_DURABLE_CACHE_PREFERRED_POOL_SIZE)
         .setEnableArateaTokenCache(DEFAULT_ENABLE_ARATEA_TOKEN_CACHE)
         .setEnableAsyncTokenCacheRefill(DEFAULT_ENABLE_ASYNC_TOKEN_CACHE_REFILL)
+        .setForceIpTunnelCreationForEverySession(DEFAULT_FORCE_IP_TUNNEL_CREATION_FOR_EVERY_SESSION)
         .setArateaTokenBatchSize(DEFAULT_ARATEA_TOKEN_BATCH_SIZE)
         .setArateaTokenCacheMode(DEFAULT_ARATEA_TOKEN_CACHE_MODE)
         .setArateaTokenCacheRefreshIntervalMinutes(
@@ -106,6 +107,9 @@ public abstract class PrivateInferenceConfig {
 
   /** Returns true if the Aratea token cache refill should happen asynchronously. */
   public abstract boolean enableAsyncTokenCacheRefill();
+
+  /** Returns true if an IP tunnel should be created for every session. */
+  public abstract boolean forceIpTunnelCreationForEverySession();
 
   /** Returns the current transport mode requests will use. */
   public abstract TransportFlag.Mode transportMode();
@@ -193,6 +197,7 @@ public abstract class PrivateInferenceConfig {
   public static final boolean DEFAULT_ATTACH_CERTIFICATE_HEADER = false;
   public static final boolean DEFAULT_ENABLE_ARATEA_TOKEN_CACHE = false;
   public static final boolean DEFAULT_ENABLE_ASYNC_TOKEN_CACHE_REFILL = false;
+  public static final boolean DEFAULT_FORCE_IP_TUNNEL_CREATION_FOR_EVERY_SESSION = false;
   public static final TransportFlag.Mode DEFAULT_TRANSPORT_MODE =
       TransportFlag.Mode.CRONET_MAINLINE_IP_RELAY;
 
@@ -259,6 +264,8 @@ public abstract class PrivateInferenceConfig {
     public abstract Builder setEnableArateaTokenCache(boolean value);
 
     public abstract Builder setEnableAsyncTokenCacheRefill(boolean value);
+
+    public abstract Builder setForceIpTunnelCreationForEverySession(boolean value);
 
     public abstract Builder setTransportMode(TransportFlag.Mode value);
 

@@ -50,5 +50,6 @@ android_library(
         "@maven//:com_google_dagger_hilt-android",
         "@maven//:io_grpc_grpc_api",
         "@maven//:io_grpc_grpc_binder",
+        "@maven//:javax_inject_javax_inject",
     ],
 )

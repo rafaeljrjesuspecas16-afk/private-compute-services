@@ -46,6 +46,7 @@ android_library(
         "//third_party/kotlin/kotlinx_coroutines:kotlinx_coroutines-android",
         "//third_party/kotlin/kotlinx_coroutines:kotlinx_coroutines_guava-android",
         "@maven//:androidx_annotation_annotation",
+        "@maven//:androidx_core_core",
         "@maven//:com_google_crypto_tink_tink_android",
         "@maven//:com_google_dagger_dagger",
         "@maven//:com_google_dagger_hilt-android",

@@ -31,6 +31,7 @@ android_library(
         "//src/com/google/android/as/oss/feedback/gateway:feedback_http_client",
         "//src/com/google/android/as/oss/feedback/gateway/service/aidl",
         "//src/com/google/android/as/oss/feedback/proto/gateway:pixel_apex_api_kt_proto_lite",
+        "//third_party/kotlin/kotlinx_coroutines:kotlinx_coroutines-jvm",
         "@maven//:com_google_dagger_dagger",
         "@maven//:com_google_flogger_google_extensions",
         "@maven//:com_google_protobuf_protobuf_javalite",

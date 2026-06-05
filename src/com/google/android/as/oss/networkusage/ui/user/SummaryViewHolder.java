@@ -25,6 +25,7 @@ import android.widget.TextView;
 /** ViewHolder for displaying the summary banner in the RecyclerView. */
 public class SummaryViewHolder extends LogItemViewHolder {
 
+  private final TextView summaryBannerTitleTv;
   private final TextView totalUpdatesTv;
   private final TextView totalUploadSizeTv;
   private final TextView totalDownloadSizeTv;
@@ -38,6 +39,8 @@ public class SummaryViewHolder extends LogItemViewHolder {
   @Override
   public void bind(LogItemWrapper item) {
     NetworkUsageSummary networkUsageSummary = ((SummaryWrapper) item).getNetworkUsageSummary();
+    summaryBannerTitleTv.setText(
+        itemView.getContext().getResources().getString(R.string.summary_banner_title, 2));
     totalUpdatesTv.setText(
         itemView
             .getContext()
@@ -54,6 +57,7 @@ public class SummaryViewHolder extends LogItemViewHolder {
 
   private SummaryViewHolder(View itemView) {
     super(itemView);
+    summaryBannerTitleTv = itemView.findViewById(R.id.summary_banner_title);
     totalUpdatesTv = itemView.findViewById(R.id.total_updates);
     totalUploadSizeTv = itemView.findViewById(R.id.total_upload_size);
     totalDownloadSizeTv = itemView.findViewById(R.id.total_download_size);

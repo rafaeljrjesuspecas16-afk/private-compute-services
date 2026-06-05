@@ -43,6 +43,11 @@ public final class Annotations {
   @Retention(RetentionPolicy.RUNTIME)
   public @interface PrivateInferenceEnableAsyncTokenCacheRefill {}
 
+  /** Annotation for whether to create an IP tunnel for every session. */
+  @Qualifier
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface PrivateInferenceForceIpTunnelCreationForEverySession {}
+
   /** Annotation for whether to attach Android package name and certificate to the request. */
   @Qualifier
   @Retention(RetentionPolicy.RUNTIME)

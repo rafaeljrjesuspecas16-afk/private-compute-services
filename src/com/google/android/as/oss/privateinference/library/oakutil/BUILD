@@ -89,6 +89,7 @@ android_library(
     name = "private_inference_oak_async_client",
     srcs = [
         "AndroidKeystoreAttestationGenerator.kt",
+        "OakAsyncClient.kt",
         "PrivateInferenceOakAsyncClient.kt",
         "PrivateInferenceOakAsyncClientModule.java",
         "RequestLoggingHelpers.kt",

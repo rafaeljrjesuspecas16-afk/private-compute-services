@@ -68,8 +68,7 @@ android_library(
     ],
     deps = [
         ":endorsement_client_type",
-        "//java/com/google/protobuf/contrib/android:proto_parsers",
-        "//third_party/fcp/protos/confidentialcompute:access_policy_endorsement_options_java_proto_lite",
+        "@maven//:com_google_guava_guava",
     ],
 )
 

@@ -48,6 +48,9 @@ abstract class PrivateInferenceOakAsyncClientModule {
   abstract ListeningExecutorService bindsListeningExecutorService(
       @PiExecutorQualifier ListeningScheduledExecutorService executor);
 
+  @Binds
+  abstract OakAsyncClient bindsOakAsyncClient(PrivateInferenceOakAsyncClient impl);
+
   @Provides
   @Singleton
   static StreamObserverSessionClient provideStreamObserverSessionClient(

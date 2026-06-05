@@ -17,8 +17,9 @@
 package com.google.android.as.oss.fl.fc.service.scheduler.endorsementoptions;
 
 import android.content.Context;
-import com.google.intelligence.fcp.confidentialcompute.AccessPolicyEndorsementOptions;
-import com.google.protobuf.contrib.android.ProtoParsers;
+import com.google.common.io.ByteStreams;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 
 /** Determines the endorsement key to be used for the apk. */
@@ -30,13 +31,17 @@ public final class EndorsementOptionsProviderImpl implements EndorsementOptionsP
   }
 
   @Override
-  public AccessPolicyEndorsementOptions getEndorsementOptions(
-      Context context, EndorsementClientType clientType) {
+  public byte[] getEndorsementOptions(Context context, EndorsementClientType clientType) {
     Integer resourceId = resourceIdMap.get(clientType);
     if (resourceId == null) {
       throw new IllegalArgumentException("No resource ID found for client type: " + clientType);
     }
-    return ProtoParsers.parseFromRawRes(
-        context, AccessPolicyEndorsementOptions.parser(), resourceId);
+    try (InputStream inputStream = context.getResources().openRawResource(resourceId)) {
+      return ByteStreams.toByteArray(inputStream);
+    } catch (IOException e) {
+      // This should never happen, as the resource is bundled with the APK. Generate a crash
+      // report.
+      throw new IllegalStateException("Failed to read endorsement options from resource.", e);
+    }
   }
 }

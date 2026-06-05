@@ -32,7 +32,6 @@ android_library(
         ":annotations",
         "//src/com/google/android/as/oss/common/config",
         "//src/com/google/android/as/oss/common/security:security_policy_utils",
-        "//src/com/google/android/as/oss/common/security/api:package_security_info_kt_proto_lite",
         "//src/com/google/android/as/oss/common/security/config",
         "@maven//:com_google_dagger_dagger",
         "@maven//:com_google_dagger_hilt-android",

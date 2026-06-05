@@ -21,6 +21,7 @@
     <permission
         android:name="com.google.android.as.oss.actionlauncher.permission.LAUNCH_ACTION"
         android:protectionLevel="signature|knownSigner"
+        android:permissionFlags="allowedInPrivateComputeCore"
         android:knownCerts="@array/config_action_launcher_launch_action_permission_known_certs" />
 
   <application>

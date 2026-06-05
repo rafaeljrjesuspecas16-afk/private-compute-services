@@ -47,6 +47,7 @@ android_library(
         "//third_party/java/androidx/compose/ui/unit",
         "//third_party/java/androidx/core/ktx",
         "//third_party/kotlin/kotlinx_coroutines:kotlinx_coroutines-jvm",
+        "@maven//:androidx_core_core",
         "@maven//:javax_inject_javax_inject",
     ],
 )

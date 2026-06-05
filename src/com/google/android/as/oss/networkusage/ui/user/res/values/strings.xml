@@ -16,8 +16,9 @@
 -->
 
 
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-  <!-- Title of the network usage log activity. [CHAR_LIMIT=NONE] -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2"
+    xmlns:tools="http://schemas.android.com/tools">
+<!-- Title of the network usage log activity. [CHAR_LIMIT=NONE] -->
   <string name="network_usage_log_activity_title">Network usage log</string>
 
   <!-- Name of the HTTP protocol, which is used to download data in Private Compute Services. [CHAR_LIMIT=NONE] -->
@@ -226,8 +227,8 @@
   <!-- Indicates that the download failed. [CHAR_LIMIT=NONE] -->
   <string name="details_page_status_failure">Interrupted</string>
 
-  <!-- TODO: This should be set dynamically based on the age of the database. -->
-  <string name="summary_banner_title" translatable="false">In the last 2 weeks</string>
+  <!-- Title for the summary banner indicating the time range for the displayed network usage data. [CHAR_LIMIT=NONE] -->
+  <string name="summary_banner_title" tools:ignore="PluralsCandidate">In the last <xliff:g id="constant_two" example="2">%1$d</xliff:g> weeks</string>
 
   <!-- Ambient Context -->
   <!-- Name of the Ambient Context Service which is part of Private Compute Core, displayed in the network usage log. [CHAR_LIMIT=NONE] -->
@@ -384,6 +385,10 @@
   <string name="feature_name_gboard_conversational_writing_tools">Gboard conversational writing tools</string>
   <!-- Description of the Gboard conversational writing tools feature, displayed in the network usage log. [CHAR_LIMIT=NONE] -->
   <string name="description_pi_gboard_conversational_writing_tools">Text input was processed in a Private AI Compute environment.</string>
+  <!-- Name of the Soltaire SD feature, displayed in the network usage log. [CHAR_LIMIT=NONE] -->
+  <string name="feature_name_soltaire_sd">Soltaire SD</string>
+  <!-- Description of the Soltaire SD feature, displayed in the network usage log. [CHAR_LIMIT=NONE] -->
+  <string name="description_pi_soltaire_sd">Text and image input was processed in a Private AI Compute environment.</string>
 
   <!-- IP protection for Private Inference. [CHAR LIMIT=NONE] -->
   <string name="feature_name_ip_protection">IP protection</string>

@@ -37,6 +37,7 @@ android_library(
         "//third_party/java/androidx/compose/runtime",
         "//third_party/java/androidx/compose/ui",
         "//third_party/java/androidx/core/ktx",
+        "//third_party/kotlin/kotlinx_coroutines:kotlinx_coroutines-jvm",
         "@maven//:com_google_dagger_dagger",
     ],
 )

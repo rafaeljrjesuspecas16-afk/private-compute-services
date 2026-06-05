@@ -357,6 +357,12 @@ abstract class NetworkUsageLogContentModule {
                 .featureNameId(R.string.feature_name_gboard_conversational_writing_tools)
                 .descriptionId(R.string.description_pi_gboard_conversational_writing_tools)
                 .build(),
+            piEntryBuilder
+                .packageName(AICORE_PACKAGE_NAME)
+                .connectionKeyString(PcsPrivateInferenceFeatureName.FEATURE_NAME_SOLTAIRE_SD.name())
+                .featureNameId(R.string.feature_name_soltaire_sd)
+                .descriptionId(R.string.description_pi_soltaire_sd)
+                .build(),
             asiHttpEntryBuilder
                 .connectionKeyStringId(R.string.url_regex_quick_tap)
                 .featureNameId(R.string.feature_name_quick_tap)

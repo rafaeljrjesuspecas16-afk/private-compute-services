@@ -247,7 +247,7 @@ message BeaconRowItemText {
 }
 
 // The source of the data for a response
-// Next ID: 7
+// Next ID: 8
 message BeaconResponseSource {
   enum SourceType {
     UNKNOWN = 0;
@@ -265,6 +265,7 @@ message BeaconResponseSource {
   // The text to be displayed on the CTA button. If the user clicks this, they
   // will be taken to the source of the data.
   string cta_button_text = 2;
+  string source_app_name = 7;
 
   /**
    * The index of the pending intent in the list of pending intents. This is

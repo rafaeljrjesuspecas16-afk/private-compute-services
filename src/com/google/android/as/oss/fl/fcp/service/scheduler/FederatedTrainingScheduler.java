@@ -35,7 +35,6 @@ import com.google.fcp.client.tasks.OnFailureListener;
 import com.google.fcp.client.tasks.OnSuccessListener;
 import com.google.fcp.client.tasks.Task;
 import com.google.common.flogger.GoogleLogger;
-import com.google.intelligence.fcp.confidentialcompute.AccessPolicyEndorsementOptions;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 
@@ -80,7 +79,7 @@ public class FederatedTrainingScheduler implements TrainingScheduler {
           trainerOptions.getPopulationName(), trainerOptions.getSessionName());
     }
 
-    AccessPolicyEndorsementOptions endorsementOptions =
+    byte[] endorsementOptions =
         endorsementOptionsProvider.getEndorsementOptions(
             context, EndorsementClientType.PRIVATE_COMPUTE_SERVICES_DEFAULT_KEY);
 

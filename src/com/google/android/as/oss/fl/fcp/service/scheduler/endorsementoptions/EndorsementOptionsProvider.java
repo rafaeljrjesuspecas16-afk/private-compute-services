@@ -17,10 +17,8 @@
 package com.google.android.as.oss.fl.fc.service.scheduler.endorsementoptions;
 
 import android.content.Context;
-import com.google.intelligence.fcp.confidentialcompute.AccessPolicyEndorsementOptions;
 
 /** Interface for providing endorsement options for Fc. */
 public interface EndorsementOptionsProvider {
-  AccessPolicyEndorsementOptions getEndorsementOptions(
-      Context context, EndorsementClientType clientType);
+  byte[] getEndorsementOptions(Context context, EndorsementClientType clientType);
 }

@@ -24,7 +24,4 @@ filegroup(
 android_library(
     name = "aidl",
     idl_srcs = [":idl_srcs"],
-    deps = [
-        "@maven//:androidx_annotation_annotation",
-    ],
 )

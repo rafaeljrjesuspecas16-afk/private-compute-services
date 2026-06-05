@@ -46,7 +46,8 @@ public class FcpLoggerInvokerImpl implements FcpLoggerInvoker {
         new FcInvocationOptions.Builder()
             .setSessionName(options.sessionName())
             .setFederatedOptions(options.populationName())
-            .setAccessPolicyEndorsementOptions(options.accessPolicyEndorsementOptions())
+            .setAccessPolicyEndorsementOptions(
+                options.accessPolicyEndorsementOptions().toByteArray())
             .build();
     FcInvoker.InvocationCallback fcCallback =
         new FcInvoker.InvocationCallback() {

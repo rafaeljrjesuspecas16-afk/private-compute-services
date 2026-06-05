@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-syntax = "proto3";
+edition = "2024";
 
 package com.google.android.as.oss.features.optin.api;
 
-
+option features.field_presence = IMPLICIT;
 option java_package = "com.google.android.as.oss.features.optin.api.proto";
-option java_multiple_files = true;
-option java_outer_classname = "OptInServiceProto";
 
 // Service for managing feature opt-ins.
 service FeatureOptInService {
@@ -34,8 +32,11 @@ service FeatureOptInService {
 message SettingValue {
   oneof value {
     int32 int_value = 1;
+
     int64 long_value = 2;
+
     float float_value = 3;
+
     string string_value = 4;
   }
 }
@@ -44,6 +45,7 @@ message SettingValue {
 message OptInSetting {
   // The name of the setting.
   string setting_name = 1;
+
   // The value of the setting.
   SettingValue value = 2;
 }
@@ -51,15 +53,13 @@ message OptInSetting {
 // Request message for writing opt-in statuses.
 message WriteOptInStatusRequest {
   // The settings to write.
-  repeated OptInSetting settings_to_write = 1
-     ;
+  repeated OptInSetting settings_to_write = 1;
 }
 
 // Response message for writing opt-in statuses.
 message WriteOptInStatusResponse {
   // The results of the write operations.
-  repeated WriteResult write_results = 1
-     ;
+  repeated WriteResult write_results = 1;
 }
 
 // Represents the result of a single write operation for an opt-in setting.
@@ -73,6 +73,7 @@ message WriteResult {
     SUCCESS = 1;
     FAILURE = 2;
   }
+
   Status status = 2;
 
   // Whether the setting was newly created or already existed.

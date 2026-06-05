@@ -69,7 +69,7 @@ internal constructor(
     BsaTokenProvider<@JvmSuppressWildcards ArateaTokenWithoutChallenge>,
   @param:PrivateInferenceClientTimers private val timers: TimerSet,
   private val pcsStatsLogger: PcsStatsLogger,
-) {
+) : OakAsyncClient {
   private val dispatcher by lazy { backgroundExecutor.asCoroutineDispatcher() }
   private val nextSessionId = atomic(1)
 
@@ -99,7 +99,7 @@ internal constructor(
    *   receive the [StreamObserver] to use for sending requests, once the stream is open.
    */
   // Open to allow mocking.
-  open fun startNoiseSession(
+  override fun startNoiseSession(
     requestMetadata: PrivateInferenceRequestMetadata,
     sessionStreamObserver: StreamObserverSessionClient.OakSessionStreamObserver,
   ) {

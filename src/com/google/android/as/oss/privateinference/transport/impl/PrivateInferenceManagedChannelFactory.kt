@@ -25,6 +25,7 @@ import com.google.android.`as`.oss.logging.PcsStatsEnums.CountMetricId
 import com.google.android.`as`.oss.logging.PcsStatsEnums.ValueMetricId
 import com.google.android.`as`.oss.privateinference.Annotations.PiServerChannelIdleTimeoutMinutes
 import com.google.android.`as`.oss.privateinference.Annotations.PrivateInferenceEndpointUrl
+import com.google.android.`as`.oss.privateinference.Annotations.PrivateInferenceForceIpTunnelCreationForEverySession
 import com.google.android.`as`.oss.privateinference.Annotations.PrivateInferenceProxyConfiguration
 import com.google.android.`as`.oss.privateinference.config.impl.ProxyAuthFlag
 import com.google.android.`as`.oss.privateinference.library.bsa.token.BsaTokenProvider
@@ -57,8 +58,10 @@ import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.nanoseconds
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.chromium.net.CronetEngine
 import org.chromium.net.Proxy
 import org.chromium.net.ProxyOptions
 import org.chromium.net.impl.HttpEngineNativeProvider
@@ -72,6 +75,8 @@ constructor(
   @ApplicationContext private val context: Context,
   @PrivateInferenceEndpointUrl private val endpointUrl: String,
   @PiServerChannelIdleTimeoutMinutes private val channelIdleTimeoutMinutes: Long,
+  @PrivateInferenceForceIpTunnelCreationForEverySession
+  private val forceIpTunnelCreationForEverySession: Boolean,
   @PrivateInferenceProxyConfiguration private val proxyConfigManager: Optional<ProxyConfigManager>,
   private val transportFlag: TransportFlag,
   private val ipRelayFallbackFlag: IpRelayFallbackFlag,
@@ -84,13 +89,21 @@ constructor(
 
   private val mutex = Mutex()
   private var managedChannelInstance: ManagedChannel? = null
+  private var currentCronetEngine: CronetEngine? = null
 
   override suspend fun getInstance(): ManagedChannel {
     return getManagedChannelInstance()
   }
 
   private suspend fun getManagedChannelInstance(): ManagedChannel = mutex.withLock {
-    managedChannelInstance ?: create().also { managedChannelInstance = it }
+    if (forceIpTunnelCreationForEverySession) {
+      logger.atInfo().log("Shutting down any previous ManagedChannel or CronetEngine.")
+      managedChannelInstance?.shutdown()
+      currentCronetEngine?.shutdown()
+      create().also { managedChannelInstance = it }
+    } else {
+      managedChannelInstance ?: create().also { managedChannelInstance = it }
+    }
   }
 
   private suspend fun create(): ManagedChannel {
@@ -125,7 +138,10 @@ constructor(
       when (mode) {
         TransportFlag.Mode.OK_HTTP -> OkHttpChannelBuilder.forAddress(endpointUrl, HTTPS_PORT)
         TransportFlag.Mode.CRONET_MAINLINE -> {
-          val engine = HttpEngineNativeProvider(context).createBuilder().build()
+          val engine =
+            HttpEngineNativeProvider(context).createBuilder().build().also {
+              currentCronetEngine = it
+            }
           CronetChannelBuilder.forAddress(endpointUrl, HTTPS_PORT, engine)
         }
         TransportFlag.Mode.CRONET_MAINLINE_IP_RELAY ->
@@ -154,7 +170,8 @@ constructor(
               )
           }
         TransportFlag.Mode.CRONET_STATIC -> {
-          val engine = NativeCronetProvider(context).createBuilder().build()
+          val engine =
+            NativeCronetProvider(context).createBuilder().build().also { currentCronetEngine = it }
           CronetChannelBuilder.forAddress(endpointUrl, HTTPS_PORT, engine)
         }
         TransportFlag.Mode.CRONET_STATIC_IP_RELAY ->
@@ -189,8 +206,9 @@ constructor(
     return try {
       val engineBuilder = providerType.builderFactory(context)
       engineBuilder.applyProxyConfig(proxyConfig)
+      val engine = engineBuilder.build().also { currentCronetEngine = it }
       pcsStatsLogger.logEventCount(providerType.metricId)
-      CronetChannelBuilder.forAddress(endpointUrl, HTTPS_PORT, engineBuilder.build())
+      CronetChannelBuilder.forAddress(endpointUrl, HTTPS_PORT, engine)
     } catch (e: UnsupportedOperationException) {
       if (fallbackOnError) {
         logger
@@ -224,7 +242,8 @@ constructor(
             { r -> r.run() },
             getProxyCallback(config),
           )
-        }
+        },
+        ProxyOptions.ALL_PROXIES_FAILED_BEHAVIOR_DISALLOW_DIRECT,
       )
     )
   }
@@ -239,7 +258,7 @@ constructor(
 
       override fun onBeforeRequest(request: Request) {
         request.use {
-          startTime = System.currentTimeMillis()
+          startTime = System.nanoTime()
           masqueTunnelSetupTimer =
             timers.start(PrivateInferenceClientTimerNames.IPP_MASQUE_TUNNEL_SETUP)
           val authHeader = getProxyTokenAuthHeader(proxyConfiguration)
@@ -267,7 +286,7 @@ constructor(
           logMasqueTunnelSetupEventMetrics(
             statusCode,
             proxyConfiguration.host,
-            System.currentTimeMillis() - it,
+            (System.nanoTime() - it).nanoseconds.inWholeMilliseconds,
           )
         }
         return Proxy.HttpConnectCallback.RESPONSE_ACTION_PROCEED

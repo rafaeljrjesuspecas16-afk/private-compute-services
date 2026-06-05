@@ -41,10 +41,7 @@ android_library(
             "CoroutineQualifiers.kt",
             "ExecutorAnnotations.java",
         ],
-    deps = [
-        "@maven//:com_google_dagger_dagger",
-        "@maven//:javax_inject_javax_inject",
-    ],
+    deps = ["@maven//:javax_inject_javax_inject"],
 )
 
 exports_files(

@@ -25,7 +25,7 @@
     android:paddingHorizontal="24dp">
 
   <TextView
-      android:text="@string/summary_banner_title"
+      android:id="@+id/summary_banner_title"
       style="@style/ListItem_DateDivider"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"

@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-edition = "2023";
+edition = "2024";
 
 package com.google.android.as.oss.availability.api;
 
 import "src/com/google/android/as/oss/availability/api/feature_availability_service_is_feature_available.proto";
 
+option java_outer_classname = "FeatureAvailabilityServiceOuterClass";
 option java_package = "com.google.android.as.oss.availability.api";
-option java_multiple_files = true;
 
 // Service to check availability of a feature.
 service FeatureAvailabilityService {
