@@ -64,6 +64,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -162,12 +164,13 @@ private fun EventCard(chip: ChipContent, reportEvent: (Int) -> Unit) {
       horizontalArrangement = Arrangement.Start,
       verticalAlignment = Alignment.CenterVertically,
     ) {
+      val painter = chip.image?.let { BitmapPainter(it.asImageBitmap()) }
       PrimaryRoundedIcon(
         iconBackgroundWidth = 40.dp,
         iconWidth = 20.dp,
         iconColor = MaterialTheme.colorScheme.onSecondary,
         iconBackgroundColor = MaterialTheme.colorScheme.secondary,
-        painter = painterResource(R.drawable.primary_round_icon_24),
+        painter = painter,
       )
       Spacer(modifier = Modifier.width(12.dp))
       Column(verticalArrangement = Arrangement.SpaceAround) {
@@ -239,11 +242,12 @@ private fun LocationCard(chip: ChipContent, reportEvent: (Int) -> Unit) {
       horizontalArrangement = Arrangement.Start,
       verticalAlignment = Alignment.CenterVertically,
     ) {
+      val painter = chip.image?.let { BitmapPainter(it.asImageBitmap()) }
       PrimaryRoundedIcon(
         iconBackgroundWidth = 59.dp,
         iconColor = MaterialTheme.colorScheme.onSecondary,
         iconBackgroundColor = MaterialTheme.colorScheme.secondary,
-        painter = painterResource(R.drawable.primary_round_icon_24),
+        painter = painter,
       )
       Spacer(modifier = Modifier.width(16.dp))
       Column(verticalArrangement = Arrangement.SpaceAround) {

@@ -70,7 +70,9 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.android.personalcontext.ace.common.FindHintUtils.findContextHint
+import com.android.personalcontext.ace.common.gradientTint
 import com.android.personalcontext.ace.common.wrappers.IPublishedContextInsight
+import com.android.personalcontext.ace.internal.energyeffects.EnergyEffectsAnimationUtils
 import com.android.personalcontext.ace.visualizer.compat.ClientActionInsightCompat
 import com.android.personalcontext.ace.visualizer.compat.EnergyEffectsAnimationCompat
 import com.android.personalcontext.ace.visualizer.compat.FlexFontCompat
@@ -178,11 +180,25 @@ internal constructor(
       },
       insight = clientActionChip.insight,
     ) {
+      val trailingIconBitmap = clientActionChip.trailingIcon?.toBitmap(context)
+      val gradientModifier =
+        if (trailingIconBitmap != null) {
+          val primaryFixedDimColor = MaterialTheme.colorScheme.primaryFixedDim
+          val primaryColor = MaterialTheme.colorScheme.primary
+          Modifier.gradientTint(listOf(primaryFixedDimColor, primaryColor))
+        } else {
+          Modifier
+        }
       MessageRowContent(
         title = clientActionChip.title,
         subtitle = clientActionChip.subtitle,
         contentDescription = clientActionChip.contentDescription,
-        icon = clientActionChip.icon?.toBitmap(context)?.asTintableIcon(tintable = false),
+        icon =
+          clientActionChip.icon
+            ?.toBitmap(context)
+            ?.asTintableIcon(tintable = trailingIconBitmap != null),
+        trailingIcon = trailingIconBitmap?.asTintableIcon(tintable = true),
+        iconModifier = gradientModifier,
       )
     }
   }
@@ -239,33 +255,39 @@ internal constructor(
     LaunchedEffect(Unit) { reportEvent(InsightEvent.EVENT_SHOW) }
     val density = LocalDensity.current
     val cornerRadius = remember(shape, density) { shape.toCornerRadius(density) }
+    val colorScheme = MaterialTheme.colorScheme
+    val geminiAnimationSpec =
+      EnergyEffectsAnimationUtils.createChipSpec(
+        cornerRadius = cornerRadius,
+        density = density.density,
+        colorScheme = colorScheme,
+        context = context,
+      )
 
     val strokeColor =
       EmbeddedTheme.InlineSuggestion.colorScheme.stroke ?: MaterialTheme.colorScheme.outlineVariant
     val backgroundColor =
       EmbeddedTheme.InlineSuggestion.colorScheme.suggestionBackground ?: Color.Transparent
-    Box(
-      modifier =
-        Modifier.clip(shape)
-          .widthIn(min = 30.dp, max = 320.dp)
-          .heightIn(min = 40.dp)
-          .combinedClickable(
-            onClick = {
-              chipOnClick()
-              reportEvent(InsightEvent.EVENT_USER_TAP)
-            },
-            onLongClick = {
-              Log.d(TAG, "[MessagesEmbedded] chip long clicked")
-              reportEvent(InsightEvent.EVENT_USER_LONG_PRESS)
-            },
-            interactionSource = interactionSource,
-            indication = ripple(color = MaterialTheme.colorScheme.onSurface),
-          )
-          .then(
-            energyEffectsAnimationCompat.applyEnergyEffectsAnimation(
-              cornerRadius = cornerRadius,
-              strokeColor = strokeColor,
-              style = EnergyEffectsAnimationCompat.AnimationStyle.CHIP,
+    with(energyEffectsAnimationCompat) {
+      Box(
+        modifier =
+          Modifier.clip(shape)
+            .widthIn(min = 30.dp, max = 264.dp)
+            .heightIn(min = 40.dp)
+            .combinedClickable(
+              onClick = {
+                chipOnClick()
+                reportEvent(InsightEvent.EVENT_USER_TAP)
+              },
+              onLongClick = {
+                Log.d(TAG, "[MessagesEmbedded] chip long clicked")
+                reportEvent(InsightEvent.EVENT_USER_LONG_PRESS)
+              },
+              interactionSource = interactionSource,
+              indication = ripple(color = MaterialTheme.colorScheme.onSurface),
+            )
+            .applyEnergyEffectsAnimation(
+              geminiAnimationSpec = geminiAnimationSpec,
               fallback = {
                 animatedActionBorder(
                   cornerRadius = cornerRadius,
@@ -274,20 +296,22 @@ internal constructor(
                 )
               },
             )
-          )
-          .semantics { role = Role.Button },
-      contentAlignment = Alignment.Center,
-    ) {
-      chipContents()
+            .semantics { role = Role.Button },
+        contentAlignment = Alignment.Center,
+      ) {
+        chipContents()
+      }
     }
   }
 
   @Composable
   private fun MessageRowContent(
     title: String,
-    subtitle: String? = null,
     contentDescription: String,
     icon: TintableIcon?,
+    iconModifier: Modifier = Modifier,
+    subtitle: String? = null,
+    trailingIcon: TintableIcon? = null,
   ) {
     Row(
       modifier =
@@ -300,20 +324,25 @@ internal constructor(
       verticalAlignment = Alignment.CenterVertically,
     ) {
       // Icon
+      val tint =
+        EmbeddedTheme.InlineSuggestion.colorScheme.icon ?: MaterialTheme.colorScheme.primary
       icon?.let {
         IconOrImage(
           icon = icon,
-          modifier = Modifier.size(18.dp).align(Alignment.CenterVertically),
-          tint =
-            EmbeddedTheme.InlineSuggestion.colorScheme.icon ?: MaterialTheme.colorScheme.primary,
+          modifier = Modifier.size(18.dp).align(Alignment.CenterVertically).then(iconModifier),
+          tint = tint,
         )
       }
 
       // Text
       if (subtitle.isNullOrEmpty()) {
-        SuggestionText(title, maxLines = 2, modifier = Modifier.align(Alignment.CenterVertically))
+        SuggestionText(
+          title,
+          maxLines = 2,
+          modifier = Modifier.align(Alignment.CenterVertically).weight(1f, fill = false),
+        )
       } else {
-        Column {
+        Column(modifier = Modifier.weight(1f, fill = false)) {
           SuggestionText(title, maxLines = 1)
           Text(
             text = subtitle,
@@ -330,6 +359,14 @@ internal constructor(
             overflow = TextOverflow.Ellipsis,
           )
         }
+      }
+
+      if (trailingIcon != null) {
+        IconOrImage(
+          icon = trailingIcon,
+          modifier = Modifier.size(18.dp).align(Alignment.CenterVertically),
+          tint = tint,
+        )
       }
     }
   }

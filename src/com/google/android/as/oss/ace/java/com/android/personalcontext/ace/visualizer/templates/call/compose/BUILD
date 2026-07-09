@@ -87,6 +87,7 @@ android_library(
         "//third_party/java/androidx/compose/runtime",
         "//third_party/java/androidx/compose/runtime/saveable",
         "//third_party/java/androidx/compose/ui",
+        "//third_party/java/androidx/compose/ui/geometry",
         "//third_party/java/androidx/compose/ui/graphics",
         "//third_party/java/androidx/compose/ui/text",
         "//third_party/java/androidx/compose/ui/unit",

@@ -20,13 +20,17 @@ import android.os.Bundle
 import android.service.personalcontext.insight.ContextInsight
 import com.android.personalcontext.ace.client.prototype.PrototypeInsightCollection
 import com.android.personalcontext.ace.client.prototype.PrototypeInsightId.CardInsightId
+import com.android.personalcontext.ace.common.LabeledContextInsight
+import com.android.personalcontext.ace.common.labeled
 
 data class CardInsight(
-  val title: ContextInsight?,
-  val header: ContextInsight?,
+  val container: ContextInsight? = null,
+  val title: ContextInsight? = null,
+  val header: ContextInsight? = null,
   val body: ContextInsight,
-  val footer: ContextInsight?,
-  val actions: ContextInsight?,
+  val footer: ContextInsight? = null,
+  val actions: ContextInsight? = null,
+  val dismiss: ContextInsight? = null,
   /**
    * Explicit identifier required when origin hints alone cannot determine the intended card type
    * output.
@@ -38,19 +42,29 @@ data class CardInsight(
     bundle.putString(KEY_CARD_TYPE, cardType)
   }
 
-  override fun exportInsightsToList(): List<ContextInsight?> =
-    listOf(title, header, body, footer, actions)
+  override fun exportInsightsToList(): List<LabeledContextInsight> =
+    listOf(
+      title labeled "title",
+      header labeled "header",
+      body labeled "body",
+      footer labeled "footer",
+      actions labeled "actions",
+      container labeled "container",
+      dismiss labeled "dismiss",
+    )
 
   companion object : PrototypeInsightCollectionCreator() {
     private const val KEY_CARD_TYPE = "cardType"
 
     override fun create(bundle: Bundle, insights: List<ContextInsight?>) =
       CardInsight(
-        title = insights[0],
-        header = insights[1],
-        body = insights[2]!!,
-        footer = insights[3],
-        actions = insights[4],
+        container = insights.getOrNull(5),
+        title = insights.getOrNull(0),
+        header = insights.getOrNull(1),
+        body = requireNotNull(insights.getOrNull(2)) { "Body is required" },
+        footer = insights.getOrNull(3),
+        actions = insights.getOrNull(4),
+        dismiss = insights.getOrNull(6),
         cardType = bundle.getString(KEY_CARD_TYPE),
       )
   }

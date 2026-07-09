@@ -20,6 +20,7 @@ import android.content.Context
 import com.google.android.`as`.oss.feedback.gateway.getCertFingerprint
 import com.google.android.`as`.oss.privateinference.Annotations.PrivateInferenceAttachCertificateHeader
 import com.google.android.`as`.oss.privateinference.Annotations.PrivateInferenceServerGrpcChannel
+import com.google.android.`as`.oss.privateinference.Annotations.PrivateInferenceUseEndpointSpecificVerificationKeys
 import com.google.android.`as`.oss.privateinference.Annotations.PrivateInferenceWaitForGrpcChannelReady
 import com.google.android.`as`.oss.privateinference.config.impl.DeviceInfo
 import com.google.android.`as`.oss.privateinference.library.PrivateInferenceRequestMetadata
@@ -42,6 +43,8 @@ internal constructor(
   @PrivateInferenceServerGrpcChannel val managedChannelFactory: Lazy<ManagedChannelFactory>,
   @PrivateInferenceWaitForGrpcChannelReady val waitForGrpcChannelToBeReady: Boolean,
   @PrivateInferenceAttachCertificateHeader val attachCertificateHeader: Boolean,
+  @PrivateInferenceUseEndpointSpecificVerificationKeys
+  val useEndpointSpecificVerificationKeys: Boolean,
   val deviceInfo: Optional<DeviceInfo>,
 ) {
 
@@ -82,6 +85,11 @@ internal constructor(
         )
     }
 
+    if (useEndpointSpecificVerificationKeys) {
+      logger.atInfo().log("Attaching client verification key variant header to the request.")
+      stub = stub.withInterceptors(ClientVerificationKeyVariantInterceptor("nonprod"))
+    }
+
     return when {
       authInfo.spatulaHeader.isPresent ->
         stub.withInterceptors(SpatulaInterceptor(authInfo.spatulaHeader.get()))
@@ -114,6 +122,15 @@ internal constructor(
         /*extraHeaders=*/ Metadata().apply { put(SPATULA_KEY, spatula) }
       )
 
+    /**
+     * gRPC client interceptor that adds a client verification key variant header to each outgoing
+     * request for nonprod endpoints.
+     */
+    private fun ClientVerificationKeyVariantInterceptor(variant: String) =
+      newAttachHeadersInterceptor(
+        /*extraHeaders=*/ Metadata().apply { put(CLIENT_VERIFICATION_KEY_VARIANT_HEADER, variant) }
+      )
+
     private val ANDROID_PACKAGE_HEADER: Metadata.Key<String> =
       Metadata.Key.of("X-Android-Package", Metadata.ASCII_STRING_MARSHALLER)
     private val ANDROID_CERT_HEADER: Metadata.Key<String> =
@@ -127,5 +144,8 @@ internal constructor(
 
     private val SPATULA_KEY: Metadata.Key<String> =
       Metadata.Key.of("x-goog-spatula", Metadata.ASCII_STRING_MARSHALLER)
+
+    private val CLIENT_VERIFICATION_KEY_VARIANT_HEADER: Metadata.Key<String> =
+      Metadata.Key.of("X-Client-Verification-Key-Variant", Metadata.ASCII_STRING_MARSHALLER)
   }
 }

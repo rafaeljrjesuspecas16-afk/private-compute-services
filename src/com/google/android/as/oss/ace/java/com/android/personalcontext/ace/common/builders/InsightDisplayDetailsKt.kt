@@ -21,21 +21,36 @@ package com.android.personalcontext.ace.common.builders
 import android.graphics.drawable.Icon
 import android.service.personalcontext.insight.InsightDisplayDetails
 
-/** Creates an [InsightDisplayDetails] using a title. */
+/** Creates an [InsightDisplayDetails] using a title and optional icon. */
+@JvmSynthetic
+@JvmName("insightDisplayDetailsWithTitle")
 inline fun insightDisplayDetails(
   title: CharSequence,
+  icon: Icon? = null,
   block: InsightDisplayDetailsKt.Dsl.() -> Unit = {},
 ): InsightDisplayDetails =
-  InsightDisplayDetailsKt.Dsl(InsightDisplayDetails.Builder(title)).apply(block).build()
+  if (icon == null) {
+    InsightDisplayDetailsKt.Dsl(InsightDisplayDetails.Builder(title)).apply(block).build()
+  } else {
+    InsightDisplayDetailsKt.Dsl(InsightDisplayDetails.Builder(title, icon)).apply(block).build()
+  }
 
-/** Creates an [InsightDisplayDetails] using an icon. */
+/** Creates an [InsightDisplayDetails] using an icon and optional title. */
+@JvmSynthetic
+@JvmName("insightDisplayDetailsWithIcon")
 inline fun insightDisplayDetails(
   icon: Icon,
+  title: CharSequence? = null,
   block: InsightDisplayDetailsKt.Dsl.() -> Unit = {},
 ): InsightDisplayDetails =
-  InsightDisplayDetailsKt.Dsl(InsightDisplayDetails.Builder(icon)).apply(block).build()
+  if (title == null) {
+    InsightDisplayDetailsKt.Dsl(InsightDisplayDetails.Builder(icon)).apply(block).build()
+  } else {
+    InsightDisplayDetailsKt.Dsl(InsightDisplayDetails.Builder(title, icon)).apply(block).build()
+  }
 
-/** Creates an [InsightDisplayDetails] using a title and an icon. */
+/** Creates an [InsightDisplayDetails] using an icon and optional title. */
+@JvmSynthetic
 inline fun insightDisplayDetails(
   title: CharSequence,
   icon: Icon,

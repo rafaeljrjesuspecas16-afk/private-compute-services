@@ -25,6 +25,7 @@ android_library(
     ],
     visibility = ["//visibility:public"],
     exports = [
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/common/executors:safe_main_thread_executor_module",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/internal:personal_context_hilt_module",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/internal/service:pcs_visualizer_service",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/visualizer:personal_context_visualizer_templates_module",

@@ -38,7 +38,7 @@ data class EmbeddedScrollInsight(
   @property:ScrollAxis val axes: Int = 0,
   val x: Float = 0f,
   val y: Float = 0f,
-  override val originHints: Set<PublishedContextHint> = emptySet(),
+  override val originHints: Collection<PublishedContextHint> = emptySet(),
 ) : PrototypeContextInsight(EmbeddedScrollInsightId, this) {
 
   override fun exportDataToBundle(bundle: Bundle) {

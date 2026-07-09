@@ -24,115 +24,220 @@ import android.os.Parcelable
 import android.service.personalcontext.hint.PublishedContextHint
 import android.service.personalcontext.insight.InsightDisplayDetails
 import android.util.Log
-import androidx.annotation.Keep // Used for parcelables so that they're the same module between APKs
+import androidx.annotation.Keep
+import androidx.annotation.VisibleForTesting
 import com.android.personalcontext.ace.client.prototype.PrototypeContextInsight
 import com.android.personalcontext.ace.client.prototype.PrototypeInsightId.ClientActionInsightId
-import com.android.personalcontext.ace.common.builders.insightDisplayDetails
-import kotlin.jvm.java
+import com.android.personalcontext.ace.client.prototype.clientaction.params.ClientActionParams as ClientActionParamsBundle
+import com.android.personalcontext.ace.client.prototype.clientaction.params.ClientActionParamsFactory
+import com.android.personalcontext.ace.client.prototype.clientaction.params.UnknownParams as UnknownParamsBundle
+import com.android.personalcontext.ace.client.prototype.clientaction.params.fullscreenrequest.FullScreenRequestParams as FullScreenRequestParamsBundle
+import com.android.personalcontext.ace.client.prototype.clientaction.params.sharelivelocation.ShareLiveLocationParams as ShareLiveLocationParamsBundle
+import com.android.personalcontext.ace.client.prototype.clientaction.params.sharephoto.SharePhotoParams as SharePhotoParamsBundle
+import com.android.personalcontext.ace.client.prototype.clientaction.params.showcards.ShowCardsParams as ShowCardsParamsBundle
+import com.android.personalcontext.ace.client.prototype.clientaction.params.textpaste.TextPasteParams as TextPasteParamsBundle
+import com.android.personalcontext.ace.common.InsightExtendedDetails
 import kotlinx.parcelize.Parcelize
 
 /**
- * An insight for the client action.
+ * An insight for the client action
  *
- * @property clientActionParams The parameters specific to the action type.
+ * @property clientActionParams The parameters specific to the action type
  * @property insightDisplayDetails Display details for the client action.
+ * @property insightExtendedDetails Extended details for the client action.
  * @property originHints The origin hints of the insight.
  */
+@Suppress("DEPRECATION")
 data class ClientActionInsight(
-  val clientActionParams: ClientActionParams,
+  val clientActionParams: ClientActionParamsBundle,
   val insightDisplayDetails: InsightDisplayDetails,
-  override val originHints: Set<PublishedContextHint>,
+  val insightExtendedDetails: InsightExtendedDetails? = null,
+  override val originHints: Collection<PublishedContextHint>,
 ) : PrototypeContextInsight(ClientActionInsightId, this) {
 
   override fun exportDataToBundle(bundle: Bundle) {
-    bundle.putParcelable(CLIENT_ACTION_PARAMS_KEY, clientActionParams)
+    val legacyClientActionParams = convertToParamsLegacy(clientActionParams)
+    if (legacyClientActionParams != null) {
+      // This putParcelable() remains here to support legacy Parcelable representation. Receivers
+      // should prefer to use [CLIENT_ACTION_PARAMS_BUNDLE_KEY] over
+      // [CLIENT_ACTION_PARAMS_LEGACY_KEY]. If the params is a new type (ie. created after May
+      // 2026), [CLIENT_ACTION_PARAMS_LEGACY_KEY] will be null because there is no legacy parcelable
+      // representation for new params types.
+      bundle.putParcelable(CLIENT_ACTION_PARAMS_LEGACY_KEY, legacyClientActionParams)
+    }
 
     bundle.putBundle(
-      CLIENT_ACTION_PARAMS_KEY,
-      Bundle().apply { putParcelable(CLIENT_ACTION_PARAMS_KEY, clientActionParams) },
+      CLIENT_ACTION_PARAMS_BUNDLE_KEY,
+      Bundle().apply { clientActionParams.exportDataToBundle(this) },
     )
-
     bundle.putParcelable(INSIGHT_DISPLAY_DETAILS_KEY, insightDisplayDetails)
+    if (insightExtendedDetails != null) {
+      bundle.putBundle(
+        INSIGHT_EXTENDED_DETAILS_KEY,
+        Bundle().apply { insightExtendedDetails.writeToBundle(this) },
+      )
+    }
   }
 
   companion object : PrototypeContextInsightCreator() {
-    const val CLIENT_ACTION_PARAMS_KEY = "CLIENT_ACTION_PARAMS_KEY"
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    const val CLIENT_ACTION_PARAMS_LEGACY_KEY = "CLIENT_ACTION_PARAMS_KEY"
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    const val CLIENT_ACTION_PARAMS_BUNDLE_KEY = "CLIENT_ACTION_PARAMS_BUNDLE_KEY"
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     const val INSIGHT_DISPLAY_DETAILS_KEY = "INSIGHT_DISPLAY_DETAILS_KEY"
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    const val INSIGHT_EXTENDED_DETAILS_KEY = "INSIGHT_EXTENDED_DETAILS_KEY"
     private const val TAG = "ClientActionInsight"
 
     override fun create(
       bundle: Bundle,
       originHints: Set<PublishedContextHint>,
     ): PrototypeContextInsight {
+      val clientActionParamsBundle =
+        parseClientActionParamsBundle(bundle)
+          ?: parseClientActionParamsLegacy(bundle)
+          ?: UnknownParamsBundle()
+
+      val insightDisplayDetails =
+        requireNotNull(
+          bundle.getParcelable(INSIGHT_DISPLAY_DETAILS_KEY, InsightDisplayDetails::class.java)
+        )
+
+      val insightExtendedDetails =
+        bundle.getBundle(INSIGHT_EXTENDED_DETAILS_KEY)?.let {
+          InsightExtendedDetails.createFromBundle(it)
+        }
+
+      return ClientActionInsight(
+        clientActionParams = clientActionParamsBundle,
+        insightDisplayDetails = insightDisplayDetails,
+        insightExtendedDetails = insightExtendedDetails,
+        originHints = originHints,
+      )
+    }
+
+    /** Gets [ClientActionParamsBundle] from the bundle. */
+    private fun parseClientActionParamsBundle(bundle: Bundle): ClientActionParamsBundle? {
+      val clientActionBundle = bundle.getBundle(CLIENT_ACTION_PARAMS_BUNDLE_KEY)
+      val clientActionParamsBundle = clientActionBundle?.let {
+        ClientActionParamsFactory.create(it)
+      }
+
+      return clientActionParamsBundle
+    }
+
+    /** Gets [ClientActionParamsBundle] from the legacy Parcelable representation. */
+    private fun parseClientActionParamsLegacy(bundle: Bundle): ClientActionParamsBundle? {
       bundle.classLoader = ClientActionParams::class.java.classLoader
-      val clientActionParams =
+      val legacyClientActionParams: ClientActionParams? =
         runCatching<ClientActionParams> {
-            val rawValue = bundle.get(CLIENT_ACTION_PARAMS_KEY)
-            val _clientActionParams =
+            val rawValue = bundle.get(CLIENT_ACTION_PARAMS_LEGACY_KEY)
+            val actionParams =
               when (rawValue) {
                 is Bundle -> {
                   rawValue.classLoader = ClientActionParams::class.java.classLoader
-                  rawValue.getParcelable(CLIENT_ACTION_PARAMS_KEY, ClientActionParams::class.java)
+                  rawValue.getParcelable(
+                    CLIENT_ACTION_PARAMS_LEGACY_KEY,
+                    ClientActionParams::class.java,
+                  )
                 }
                 is ClientActionParams -> rawValue
                 else -> null
               }
 
-            requireNotNull(_clientActionParams) { "bundle.get(CLIENT_ACTION_PARAMS_KEY) is null" }
+            requireNotNull(actionParams) { "bundle.get(CLIENT_ACTION_PARAMS_LEGACY_KEY) is null" }
           }
-          .fold(
-            onSuccess = { it },
-            onFailure = { e ->
-              Log.e(
-                TAG,
-                "Failed to get ClientActionParams. The most common reason is due to building SENDER and RECEIVER APKs from different source-control snapshots.",
-                e,
-              )
-              UnknownParams()
-            },
-          )
-
-      val insightDisplayDetails =
-        runCatching<InsightDisplayDetails> {
-            requireNotNull(
-              bundle.getParcelable(INSIGHT_DISPLAY_DETAILS_KEY, InsightDisplayDetails::class.java)
-            ) {
-              "bundle.get(INSIGHT_DISPLAY_DETAILS_KEY) is null"
-            }
+          .getOrElse { e ->
+            Log.e(TAG, "Failed to get Legacy ClientActionParams.", e)
+            null
           }
-          .fold(
-            onSuccess = { it },
-            onFailure = { e ->
-              Log.e(
-                TAG,
-                "Failed to get InsightDisplayDetails. Common reasons: 1. Check that the SENDER sent insightDisplayDetails. 2. (Unlikely) Check that SENDER and RECEIVER APKs are built from the same source-control snapshot.",
-                e,
-              )
-              insightDisplayDetails("")
-            },
-          )
 
-      return ClientActionInsight(
-        clientActionParams = clientActionParams,
-        insightDisplayDetails = insightDisplayDetails,
-        originHints = originHints,
+      if (legacyClientActionParams == null) {
+        Log.v(TAG, "[parseParcelableParams] legacyClientActionParams is null")
+        return null
+      }
+
+      Log.i(
+        TAG,
+        "[parseParcelableParams] Received legacy Parcelable params, converting to Bundle params.",
       )
+      return convertToParamsBundle(legacyClientActionParams)
     }
+
+    /**
+     * Converts a [ClientActionParamsBundle] to a (Legacy) ClientActionParams. Should not add any
+     * new cases. All future Bundle-packed params will return null, since they will not have a
+     * legacy Parcelable representation.
+     *
+     * This will always be used by the SENDING APK to support RECEIVING APKs that are still using
+     * the legacy Parcelable representation.
+     */
+    private fun convertToParamsLegacy(paramsBundle: ClientActionParamsBundle): ClientActionParams? =
+      when (paramsBundle) {
+        is SharePhotoParamsBundle -> SharePhotoParams(query = paramsBundle.query)
+        is ShowCardsParamsBundle ->
+          ShowCardsParams(
+            clientSessionId = paramsBundle.clientSessionId,
+            selectedCardIds = paramsBundle.selectedCardIds,
+            liveDataQueryBundle = paramsBundle.liveDataQueryBundle,
+            liveDataQueryIntent = paramsBundle.liveDataQueryIntent,
+          )
+        is FullScreenRequestParamsBundle -> FullScreenRequestParams()
+        is TextPasteParamsBundle -> TextPasteParams(text = paramsBundle.text)
+        is ShareLiveLocationParamsBundle -> ShareLiveLocationParams()
+        is UnknownParamsBundle -> UnknownParams()
+        else -> null
+      }
+
+    /**
+     * Converts a legacy Parcelable ClientActionParams to a [ClientActionParamsBundle].
+     *
+     * Should not add any new cases. All new params should be Bundle-packed from the start with no
+     * Parcelable representation.
+     *
+     * This *may* be used by the RECEIVING APK if the SENDING APK is still sending legacy Parcelable
+     * params.
+     */
+    private fun convertToParamsBundle(legacyParams: ClientActionParams): ClientActionParamsBundle =
+      when (legacyParams) {
+        is SharePhotoParams -> SharePhotoParamsBundle(query = legacyParams.query)
+        is ShowCardsParams ->
+          ShowCardsParamsBundle(
+            clientSessionId = legacyParams.clientSessionId,
+            selectedCardIds = legacyParams.selectedCardIds,
+            liveDataQueryBundle = legacyParams.liveDataQueryBundle,
+            liveDataQueryIntent = legacyParams.liveDataQueryIntent,
+          )
+        is FullScreenRequestParams -> FullScreenRequestParamsBundle()
+        is TextPasteParams -> TextPasteParamsBundle(text = legacyParams.text)
+        is ShareLiveLocationParams -> ShareLiveLocationParamsBundle()
+        else -> UnknownParamsBundle()
+      }
   }
 }
 
 /** Base interface for parameters specific to different types of client actions. */
+@Deprecated("Use Bundle-backed ClientActionParams instead (instead of Parcelable).")
 sealed interface ClientActionParams : Parcelable
 
 /** Unknown client action parameters. */
-@Keep @Parcelize class UnknownParams : ClientActionParams
+@Suppress("DEPRECATION")
+@Deprecated("Use Bundle-backed ClientActionParams instead (instead of Parcelable).")
+@Keep
+@Parcelize
+class UnknownParams : ClientActionParams
 
 /**
  * Parameters for the SHARE_PHOTO client action.
  *
  * @property query The search query for the photo share action.
  */
-@Keep @Parcelize data class SharePhotoParams(val query: String) : ClientActionParams
+@Suppress("DEPRECATION")
+@Deprecated("Use Bundle-backed ClientActionParams instead (instead of Parcelable).")
+@Keep
+@Parcelize
+data class SharePhotoParams(val query: String) : ClientActionParams
 
 /**
  * Parameters for the SHOW_CARDS client action. When client app receives this action, it should:
@@ -147,6 +252,8 @@ sealed interface ClientActionParams : Parcelable
  * @property liveDataQueryIntent An optional pending intent to fetch the live data. This will be
  *   deprecated in favor of liveInfoRequest.
  */
+@Suppress("DEPRECATION")
+@Deprecated("Use Bundle-backed ClientActionParams instead (instead of Parcelable).")
 @Keep
 @Parcelize
 data class ShowCardsParams(
@@ -157,14 +264,26 @@ data class ShowCardsParams(
 ) : ClientActionParams
 
 /** A FULL_SCREEN request client action. */
-@Keep @Parcelize class FullScreenRequestParams : ClientActionParams
+@Suppress("DEPRECATION")
+@Deprecated("Use Bundle-backed ClientActionParams instead (instead of Parcelable).")
+@Keep
+@Parcelize
+class FullScreenRequestParams : ClientActionParams
 
 /**
  * Parameters for the text paste client action.
  *
  * @property text The text to be pasted.
  */
-@Keep @Parcelize data class TextPasteParams(val text: String) : ClientActionParams
+@Suppress("DEPRECATION")
+@Deprecated("Use Bundle-backed ClientActionParams instead (instead of Parcelable).")
+@Keep
+@Parcelize
+data class TextPasteParams(val text: String) : ClientActionParams
 
 /** Parameters for the share live location action. */
-@Keep @Parcelize class ShareLiveLocationParams : ClientActionParams
+@Suppress("DEPRECATION")
+@Deprecated("Use Bundle-backed ClientActionParams instead (instead of Parcelable).")
+@Keep
+@Parcelize
+class ShareLiveLocationParams : ClientActionParams

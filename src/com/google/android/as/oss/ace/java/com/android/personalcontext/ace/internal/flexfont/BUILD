@@ -29,6 +29,7 @@ android_library(
     manifest = "AndroidManifest.xml",
     resource_files = glob(["res/**"]),
     deps = [
+        "//src/com/google/android/as/oss/delegatedui/service/templates/fonts:flex_fonts",
         "//third_party/java/androidx/compose/foundation",
         "//third_party/java/androidx/compose/foundation/layout",
         "//third_party/java/androidx/compose/material3",

@@ -62,7 +62,7 @@ constructor(
       withContext(ioCoroutineDispatcher) {
         intent.resolveActivityInfo(context.packageManager, 0) != null
       }
-    _uiState.update { it.copy(settingsIntent = if (resolved) intent else null) }
+    _uiState.update { it.copy(settingsIntentLegacy = if (resolved) intent else null) }
   }
 
   private fun createUnresolvedSettingsIntent(): Intent =
@@ -126,7 +126,7 @@ constructor(
 /**
  * Ui state for [DataAttributionDialog].
  *
- * @property settingsIntent The intent to launch the settings activity. This may be null if the
- *   activity fails to resolve.
+ * @property settingsIntentLegacy The legacy intent to launch the settings activity. This may be
+ *   null if the activity fails to resolve.
  */
-data class DataAttributionUiState(val settingsIntent: Intent? = null)
+data class DataAttributionUiState(val settingsIntentLegacy: Intent? = null)

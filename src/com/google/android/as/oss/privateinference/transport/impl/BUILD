@@ -44,7 +44,6 @@ android_library(
         "//src/com/google/android/as/oss/privateinference/util/timers",
         "//src/com/google/android/as/oss/privateinference/util/timers:annotations",
         "//src/com/google/android/as/oss/privateinference/util/timers:timer_set",
-        "//third_party/java/android/android_sdk_linux/platforms/stable:android_platform_feature_flags",
         "//third_party/java/android_libs/cronet",
         "//third_party/java/android_libs/cronet:httpengine_native_provider_implementation",
         "//third_party/java/grpc:cronet_api_android",

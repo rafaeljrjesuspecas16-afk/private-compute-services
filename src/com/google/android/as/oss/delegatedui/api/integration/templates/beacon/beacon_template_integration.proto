@@ -20,7 +20,6 @@ import "src/com/google/android/as/oss/delegatedui/api/integration/templates/ui_i
 import "src/com/google/android/as/oss/feedback/proto/entity_feedback_dialog_data.proto";
 import "src/com/google/android/as/oss/feedback/proto/feedback_dialog_common_data.proto";
 
-
 import option "third_party/protobuf/cpp_features.proto";
 
 option java_outer_classname = "BeaconTemplateIntegration";
@@ -87,6 +86,46 @@ message BeaconWidget {
   int32 display_ui_version = 18 [features.field_presence = EXPLICIT];
 }
 
+// Represents a simple card
+// Represents a single card with a "simplified" view
+// Next ID: 29
+message BeaconGeneralCard {
+  // The title of the card
+  string title = 1;
+
+  // The date of the card
+  string date = 2;
+
+  // The original text, if any
+  string detailed_text = 3
+      [features.field_presence = EXPLICIT, deprecated = true];
+
+  // Replaces detailed_text; v2 required to support backwards compatibility
+  string detailed_text_v2 = 25 [features.field_presence = EXPLICIT];
+
+  BeaconResponseSource data_source = 4 [features.field_presence = EXPLICIT];
+
+  // The content description for the expand button
+  string card_expand_button_accessibility_content_description = 17;
+
+  // The UiIdTokens for the card's UI elements.
+  UiIdToken good_feedback_button_ui_id = 9;
+  UiIdToken bad_feedback_button_ui_id = 10;
+  UiIdToken expand_button_ui_id = 11;
+  UiIdToken collapse_button_ui_id = 12;
+  UiIdToken source_navigation_button_ui_id = 13;
+  UiIdToken general_card_ui_id = 23;
+
+  // The entity feedback data for the card
+  feedback.api.EntityFeedbackDialogData thumbs_up_entity_feedback_dialog_data =
+      27;
+  feedback.api.EntityFeedbackDialogData
+      thumbs_down_entity_feedback_dialog_data = 28;
+
+  // The unique identifier of the card within the list. This is used to uniquely
+  // identify the source data when rendered in a list
+  string list_uuid = 14;
+
   // Deprecated fields
   string good_feedback_button_accessibility_content_description = 5
       [deprecated = true];
@@ -95,10 +134,10 @@ message BeaconWidget {
       [deprecated = true];
 
   string card_expanded_accessibility_content_description = 7
-      [ deprecated = true];
+      [deprecated = true];
 
   string card_collapsed_accessibility_content_description = 8
-      [ deprecated = true];
+      [deprecated = true];
 
   string card_expanded_accessibility_state_description = 18 [deprecated = true];
 
@@ -279,9 +318,7 @@ message BeaconResponseSource {
    */
   int32 pending_intent_index = 3 [features.field_presence = EXPLICIT];
 
-  string source_package_name = 4 [
-    features.field_presence = EXPLICIT
-  ];
+  string source_package_name = 4 [features.field_presence = EXPLICIT];
 
   int64 date_received = 5;
 }

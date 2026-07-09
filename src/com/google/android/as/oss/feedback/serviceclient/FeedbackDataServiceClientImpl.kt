@@ -16,10 +16,12 @@
 
 package com.google.android.`as`.oss.feedback.serviceclient
 
+import com.google.android.`as`.oss.common.config.ConfigReader
 import com.google.android.`as`.oss.feedback.api.dataservice.FeedbackDataServiceGrpcKt
 import com.google.android.`as`.oss.feedback.api.dataservice.GetFeedbackDonationDataResponse
 import com.google.android.`as`.oss.feedback.api.dataservice.getFeedbackDonationDataRequest
 import com.google.android.`as`.oss.feedback.api.gateway.QuartzCUJ
+import com.google.android.`as`.oss.feedback.config.FeedbackConfig
 import com.google.common.flogger.GoogleLogger
 import com.google.common.flogger.StackSize
 import javax.inject.Inject
@@ -27,7 +29,8 @@ import javax.inject.Inject
 class FeedbackDataServiceClientImpl
 @Inject
 internal constructor(
-  private val service: FeedbackDataServiceGrpcKt.FeedbackDataServiceCoroutineStub
+  private val service: FeedbackDataServiceGrpcKt.FeedbackDataServiceCoroutineStub,
+  private val configReader: ConfigReader<FeedbackConfig>,
 ) : FeedbackDataServiceClient {
   override suspend fun getFeedbackDonationData(
     clientSessionId: String,
@@ -71,8 +74,23 @@ internal constructor(
         donationData.structuredDataDonation.memoryEntitiesList.map {
           MemoryEntity(it.entityData, it.modelVersion)
         },
+      failureReason = donationData.structuredDataDonation.failureReason,
+      sourceDocuments =
+        donationData.structuredDataDonation.sourceDocumentsList.map {
+          SourceDocument(
+            l0Title = it.l0Title,
+            l0Content = it.l0Content,
+            memoryEntity =
+              MemoryEntity(
+                entityData = it.memoryEntity.entityData,
+                modelVersion = it.memoryEntity.modelVersion,
+              ),
+          )
+        },
       feedbackUiRenderingData = feedbackUiRenderingData,
       cuj = cuj,
+      defaultDonationOptInL1Enabled = configReader.config.enableDefaultDonationOptInL1,
+      defaultDonationOptInL0Enabled = configReader.config.enableDefaultDonationOptInL0,
     )
   }
 

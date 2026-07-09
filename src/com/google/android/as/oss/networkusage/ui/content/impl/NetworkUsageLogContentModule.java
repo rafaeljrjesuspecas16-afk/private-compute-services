@@ -62,7 +62,7 @@ abstract class NetworkUsageLogContentModule {
 
   @Provides
   static ImmutableMap<ConnectionDetails, ConnectionResources> provideEntryContentMap(
-      @ApplicationContext Context context ) {
+      @ApplicationContext Context context) {
     ContentMapEntryBuilder asiHttpEntryBuilder =
         new ContentMapEntryBuilder(context).packageName(ASI_PACKAGE_NAME).connectionType(HTTP);
     ContentMapEntryBuilder gppsHttpEntryBuilder =
@@ -326,14 +326,16 @@ abstract class NetworkUsageLogContentModule {
             piEntryBuilder
                 .packageName(AICORE_PACKAGE_NAME)
                 .connectionKeyString(
-                PcsPrivateInferenceFeatureName.FEATURE_NAME_SCREENSHOTS_MEMORY_GENERATION.name())
+                    PcsPrivateInferenceFeatureName.FEATURE_NAME_SCREENSHOTS_MEMORY_GENERATION
+                        .name())
                 .featureNameId(R.string.feature_name_screenshots_memory_generation)
                 .descriptionId(R.string.description_pi_screenshots_memory_generation)
                 .build(),
             piEntryBuilder
                 .packageName(AICORE_PACKAGE_NAME)
                 .connectionKeyString(
-                PcsPrivateInferenceFeatureName.FEATURE_NAME_SCREENSHOTS_RESPONSE_GENERATION.name())
+                    PcsPrivateInferenceFeatureName.FEATURE_NAME_SCREENSHOTS_RESPONSE_GENERATION
+                        .name())
                 .featureNameId(R.string.feature_name_screenshots_response_generation)
                 .descriptionId(R.string.description_pi_screenshots_response_generation)
                 .build(),
@@ -362,6 +364,14 @@ abstract class NetworkUsageLogContentModule {
                 .connectionKeyString(PcsPrivateInferenceFeatureName.FEATURE_NAME_SOLTAIRE_SD.name())
                 .featureNameId(R.string.feature_name_soltaire_sd)
                 .descriptionId(R.string.description_pi_soltaire_sd)
+                .build(),
+            piEntryBuilder
+                .packageName(AICORE_PACKAGE_NAME)
+                .connectionKeyString(
+                    PcsPrivateInferenceFeatureName.FEATURE_NAME_AL_GPOINTER_ACTION_SUGGESTIONS
+                        .name())
+                .featureNameId(R.string.feature_name_magicpointer_suggestion_chips)
+                .descriptionId(R.string.description_pi_magicpointer_suggestion_chips)
                 .build(),
             asiHttpEntryBuilder
                 .connectionKeyStringId(R.string.url_regex_quick_tap)
@@ -484,10 +494,8 @@ abstract class NetworkUsageLogContentModule {
                 .featureNameId(R.string.feature_name_device_intelligence)
                 .descriptionId(R.string.description_psi_ap)
                 .packageName(PSI_PACKAGE_NAME)
-                .build(),
-            );
-    ImmutableMap<ConnectionDetails, ConnectionResources> finalImmutableMap =
-        entries;
+                .build());
+    ImmutableMap<ConnectionDetails, ConnectionResources> finalImmutableMap = entries;
 
     if (!verifyUniqueKeysAcrossPackages(finalImmutableMap)) {
       throw new UnsupportedOperationException("Connection key should be unique across packages.");

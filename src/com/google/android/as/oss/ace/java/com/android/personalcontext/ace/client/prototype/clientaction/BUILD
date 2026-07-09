@@ -22,12 +22,17 @@ package(
 
 android_library(
     name = "clientaction",
-    srcs = [
-        "ClientActionInsight.kt",
-    ],
+    srcs = ["ClientActionInsight.kt"],
     deps = [
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype:prototype_insight",
-        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/common/builders",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/clientaction/params",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/clientaction/params:factory",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/clientaction/params/fullscreenrequest",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/clientaction/params/sharelivelocation",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/clientaction/params/sharephoto",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/clientaction/params/showcards",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/clientaction/params/textpaste",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/common:insight_extended_details",
         "//third_party/kotlin/kotlin:parcelize_runtime",
         "@maven//:androidx_annotation_annotation",
     ],

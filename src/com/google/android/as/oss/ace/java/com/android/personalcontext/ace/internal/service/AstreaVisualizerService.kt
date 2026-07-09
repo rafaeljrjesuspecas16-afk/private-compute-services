@@ -24,16 +24,25 @@ import android.service.personalcontext.embedded.InsightSurfaceClientInfo
 import android.service.personalcontext.embedded.InsightSurfaceVisualizerService
 import android.service.personalcontext.insight.PublishedContextInsight
 import android.view.View
+import com.android.personalcontext.ace.common.executors.SafeMainThreadExecutor
 import com.android.personalcontext.ace.common.wrappers.wrap
 import com.android.personalcontext.ace.visualizer.connector.VisualizerServiceConnector
 import dagger.Lazy
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.concurrent.Executor
 import javax.inject.Inject
 
 @AndroidEntryPoint(InsightSurfaceVisualizerService::class)
 class PcsVisualizerService : Hilt_PcsVisualizerService() {
 
   @Inject lateinit var connector: Lazy<VisualizerServiceConnector>
+  @Inject @SafeMainThreadExecutor lateinit var safeMainThreadExecutor: Executor
+
+  override fun onCreate() {
+    super.onCreate()
+
+    setExecutor(safeMainThreadExecutor)
+  }
 
   override fun onClientConnected(info: InsightSurfaceClientInfo) {
     connector.get().onClientConnected(info)

@@ -67,6 +67,11 @@ class PublishedContextHintForTesting(
   override fun unwrap() = null
 }
 
+/** Creates a collection of wrapped [IPublishedContextHint]. */
+fun Collection<PublishedContextHint>.wrapAll(): List<IPublishedContextHint> = map {
+  PublishedContextHintWrapper(it)
+}
+
 /** Returns a collection of unwrapped [PublishedContextHint]. */
 fun Collection<IPublishedContextHint>.unwrapAll(): List<PublishedContextHint> = mapNotNull {
   it.unwrap()

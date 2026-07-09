@@ -29,6 +29,7 @@ android_library(
     deps = [
         ":prototype_hint",
         ":prototype_insight",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/aacard",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/card",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/clientaction",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/clientsignal",
@@ -41,12 +42,14 @@ android_library(
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/example",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/gboard",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/grid",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/loading",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/lookup",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/message:message_metadata_hint",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/metadata",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/rendertoken:hint",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/rendertoken:insight",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/republish",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/richcard",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/serversideclose",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/theme",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/weather",
@@ -70,6 +73,7 @@ android_library(
         "PrototypeInsight.kt",
     ],
     deps = [
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/common:labeled_context_insight",
         "@maven//:androidx_annotation_annotation",
     ],
 )

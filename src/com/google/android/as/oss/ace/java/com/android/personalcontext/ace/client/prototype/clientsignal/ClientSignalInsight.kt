@@ -30,7 +30,7 @@ import com.android.personalcontext.ace.client.prototype.PrototypeInsightId.Clien
 data class ClientSignalInsight(
   val type: ClientSignalType,
   val data: Boolean,
-  override val originHints: Set<PublishedContextHint> = emptySet(),
+  override val originHints: Collection<PublishedContextHint> = emptySet(),
 ) : PrototypeContextInsight(ClientSignalInsightId, this) {
 
   override fun exportDataToBundle(bundle: Bundle) {

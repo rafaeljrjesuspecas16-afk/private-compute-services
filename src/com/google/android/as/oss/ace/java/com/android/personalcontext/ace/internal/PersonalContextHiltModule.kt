@@ -17,6 +17,7 @@
 package com.android.personalcontext.ace.internal
 
 import com.android.personalcontext.ace.visualizer.PersonalContextModule
+import com.android.personalcontext.ace.visualizer.PersonalContextVisualizerTemplatesModule
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -27,7 +28,8 @@ import dagger.hilt.components.SingletonComponent
     [
       PersonalContextModule::class,
       PersonalContextModuleCompat::class,
-      PersonalContextTemplates::class,
+      PersonalContextInternalTemplatesModule::class,
+      PersonalContextVisualizerTemplatesModule::class,
     ]
 )
 @InstallIn(SingletonComponent::class)

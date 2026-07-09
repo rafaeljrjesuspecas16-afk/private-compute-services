@@ -38,7 +38,9 @@ android_library(
 android_library(
     name = "prototype_transform_compat",
     srcs = ["PrototypeTransformCompat.kt"],
-    deps = [],
+    deps = [
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/common:labeled_context_insight",
+    ],
 )
 
 android_library(
@@ -85,7 +87,10 @@ android_library(
 android_library(
     name = "client_action_insight_compat",
     srcs = ["ClientActionInsightCompat.kt"],
-    deps = [],
+    deps = [
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/common:client_action_parameters",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/common:insight_extended_details",
+    ],
 )
 
 android_library(
@@ -104,6 +109,7 @@ android_library(
     name = "energy_effects_animation_compat",
     srcs = ["EnergyEffectsAnimationCompat.kt"],
     deps = [
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/internal/energyeffects",
         "//third_party/java/androidx/compose/runtime",
         "//third_party/java/androidx/compose/ui",
         "//third_party/java/androidx/compose/ui/geometry",

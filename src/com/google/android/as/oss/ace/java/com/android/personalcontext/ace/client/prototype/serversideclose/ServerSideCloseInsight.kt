@@ -26,7 +26,7 @@ import com.android.personalcontext.ace.client.prototype.PrototypeInsightId
 @SuppressWarnings("FlaggedApi", "NewApi")
 class ServerSideCloseInsight(
   val insightDisplayDetails: InsightDisplayDetails? = null,
-  override val originHints: Set<PublishedContextHint> = emptySet(),
+  override val originHints: Collection<PublishedContextHint> = emptySet(),
 ) : PrototypeContextInsight(PrototypeInsightId.ServerSideCloseInsightId, this) {
 
   override fun exportDataToBundle(bundle: Bundle) {
@@ -34,7 +34,7 @@ class ServerSideCloseInsight(
   }
 
   companion object : PrototypeContextInsightCreator() {
-    private val INSIGHT_DISPLAY_DETAILS_KEY = "INSIGHT_DISPLAY_DETAILS_KEY"
+    private const val INSIGHT_DISPLAY_DETAILS_KEY = "INSIGHT_DISPLAY_DETAILS_KEY"
 
     override fun create(bundle: Bundle, originHints: Set<PublishedContextHint>) =
       ServerSideCloseInsight(

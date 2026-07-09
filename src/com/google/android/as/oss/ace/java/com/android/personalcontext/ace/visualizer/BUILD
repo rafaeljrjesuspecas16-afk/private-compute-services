@@ -53,6 +53,5 @@ android_library(
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/visualizer/templates/call",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/visualizer/templates/message",
         "@maven//:com_google_dagger_dagger",
-        "@maven//:com_google_dagger_hilt-android",
     ],
 )

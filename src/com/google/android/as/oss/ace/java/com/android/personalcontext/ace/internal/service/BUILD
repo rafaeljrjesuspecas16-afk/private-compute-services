@@ -22,6 +22,7 @@ android_library(
     exports_manifest = 1,
     manifest = "AndroidManifest.xml",
     deps = [
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/common/executors:safe_main_thread_executor",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/common/wrappers",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/visualizer/connector:visualizer_service_connector",
         "@maven//:com_google_dagger_dagger",

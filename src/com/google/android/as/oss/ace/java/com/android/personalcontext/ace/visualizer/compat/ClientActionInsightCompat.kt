@@ -18,9 +18,10 @@
 
 package com.android.personalcontext.ace.visualizer.compat
 
-import android.os.Parcelable
 import android.service.personalcontext.insight.ContextInsight
 import android.service.personalcontext.insight.InsightDisplayDetails
+import com.android.personalcontext.ace.common.ClientActionParameters
+import com.android.personalcontext.ace.common.InsightExtendedDetails
 
 /**
  * Compat interface for [ClientActionInsight]. Ensures that no ClassNotFoundException will be thrown
@@ -38,7 +39,10 @@ interface ClientActionInsightCompat {
 
   /** A safe wrapper that exposes properties for the client action insight. */
   interface SafeClientActionInsight {
-    val clientActionParams: Parcelable
+    val clientActionParams: ClientActionParameters
+
     val insightDisplayDetails: InsightDisplayDetails
+
+    val insightExtendedDetails: InsightExtendedDetails?
   }
 }

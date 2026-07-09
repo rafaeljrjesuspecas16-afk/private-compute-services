@@ -23,6 +23,8 @@ import android.service.personalcontext.insight.ContextInsight
 import com.android.personalcontext.ace.client.prototype.PrototypeInsightCollection
 import com.android.personalcontext.ace.client.prototype.PrototypeInsightId.InsightGridId
 import com.android.personalcontext.ace.common.InsightGridItem
+import com.android.personalcontext.ace.common.LabeledContextInsight
+import com.android.personalcontext.ace.common.labeled
 
 /**
  * Represents a grid of insights.
@@ -40,7 +42,9 @@ data class InsightGrid(val items: List<InsightGridItem>) :
     bundle.putIntArray("spans", items.map { it.span.value }.toIntArray())
   }
 
-  override fun exportInsightsToList(): List<ContextInsight?> = items.map { it.insight }
+  override fun exportInsightsToList(): List<LabeledContextInsight> = items.map {
+    it.insight labeled it.span.name
+  }
 
   companion object : PrototypeInsightCollectionCreator() {
     /** The typical total span capacity for a phone device. */

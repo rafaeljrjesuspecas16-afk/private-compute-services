@@ -50,11 +50,11 @@ fun FeedbackTagChips(
   tags: List<FeedbackTagData>,
   tagsSelection: Map<FeedbackTagData, Boolean>,
   groundTruthTitle: String,
-  tagsGroupTruthOptions: Map<FeedbackTagData, List<GroundTruthData>?>,
-  tagsGroundTruthSelection: Map<FeedbackTagData, GroundTruthData?>,
+  tagsGroupTruthOptions: Map<FeedbackTagData, List<GroundTruthData>>,
+  tagsGroundTruthSelection: Map<FeedbackTagData, Set<GroundTruthData>>,
   onTagsShown: (List<FeedbackTagData>) -> Unit,
   onTagSelectionChanged: (FeedbackTagData, Boolean) -> Unit,
-  onTagGroundTruthSelected: (FeedbackTagData, GroundTruthData) -> Unit,
+  onTagGroundTruthToggled: (FeedbackTagData, GroundTruthData) -> Unit,
 ) {
   var expandedTag by remember { mutableStateOf<FeedbackTagData?>(null) }
 
@@ -66,21 +66,28 @@ fun FeedbackTagChips(
   ) {
     for (tag in tags) {
       val selected = tagsSelection.getOrDefault(tag, false)
-      val groundTruthOptions = tagsGroupTruthOptions[tag]
-      val groundTruthSelection = tagsGroundTruthSelection[tag]
-
+      val groundTruthOptions = tagsGroupTruthOptions[tag] ?: emptyList()
+      val currentGroundTruthSelection = tagsGroundTruthSelection[tag] ?: emptySet()
       val scope = rememberCoroutineScope()
+
       Box {
         FilterChip(
           selected = selected,
           onClick = {
-            if (!selected && groundTruthOptions != null) {
-              scope.launch {
-                delay(150.milliseconds)
-                expandedTag = tag
+            val newSelectedState = !selected
+            onTagSelectionChanged(tag, newSelectedState)
+
+            // If selecting the tag and it has options, open the dropdown
+            if (newSelectedState) {
+              if (groundTruthOptions.isNotEmpty()) {
+                scope.launch {
+                  delay(150.milliseconds)
+                  expandedTag = tag
+                }
               }
+            } else {
+              expandedTag = null
             }
-            onTagSelectionChanged(tag, !selected)
           },
           leadingIcon =
             if (selected) {
@@ -114,13 +121,8 @@ fun FeedbackTagChips(
             expanded = expandedTag == tag,
             title = groundTruthTitle,
             options = groundTruthOptions,
-            selectedOption = groundTruthSelection,
-            onOptionSelected = {
-              if (!selected) {
-                onTagSelectionChanged(tag, true)
-              }
-              onTagGroundTruthSelected(tag, it)
-            },
+            selectedOptions = currentGroundTruthSelection,
+            onOptionToggled = { groundTruthData -> onTagGroundTruthToggled(tag, groundTruthData) },
             onDismissRequest = { expandedTag = null },
           )
         }

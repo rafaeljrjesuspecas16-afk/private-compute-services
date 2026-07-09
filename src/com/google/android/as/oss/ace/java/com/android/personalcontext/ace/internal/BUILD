@@ -33,8 +33,11 @@ android_library(
 
 android_library(
     name = "personal_context_templates_dagger_module",
-    srcs = ["PersonalContextTemplates.kt"],
+    srcs = ["PersonalContextInternalTemplatesModule.kt"],
     deps = [
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/internal/templates/richcard",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/internal/templates/richcard:cards_decoders",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/internal/templates/richcard:rich_card_visualizer_template",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/internal/templates/weather",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/visualizer/templates",
         "@maven//:com_google_dagger_dagger",
@@ -49,6 +52,7 @@ android_library(
         ":personal_context_dagger_compat",
         ":personal_context_templates_dagger_module",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/visualizer:personal_context_dagger_module",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/visualizer:personal_context_visualizer_templates_module",
         "@maven//:com_google_dagger_dagger",
         "@maven//:com_google_dagger_hilt-android",
     ],

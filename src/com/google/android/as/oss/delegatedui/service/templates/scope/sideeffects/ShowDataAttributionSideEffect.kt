@@ -51,6 +51,7 @@ class ShowDataAttributionSideEffectImpl(private val helper: SideEffectHelper) :
             attributionDialogData = attributionDialogData,
             attributionChipData = attributionChipData,
             sourceDeepLinks = sourceDeepLinks,
+            settingsIntent = null,
           )
         context.startActivity(intent)
       }

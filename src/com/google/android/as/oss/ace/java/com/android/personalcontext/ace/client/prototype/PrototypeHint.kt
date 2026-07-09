@@ -65,11 +65,11 @@ abstract class PrototypeHint(val id: PrototypeHintId, val creator: Creator) {
  * @property uid A unique positive value for each entry that should not change after creation.
  * @property typeName The class name of the prototype, may be used by OSI for comparison.
  */
-// Next ID: 19
+// Next ID: 20
 enum class PrototypeHintId(@field:IntRange(from = 1) val uid: Int, val typeName: String) {
   ExampleEmbeddedHintId(1, "ExampleEmbeddedHint"),
   WeatherHintId(2, "WeatherHint"),
-  AACardHintId(3, "AACardHint"),
+  AaCardMetadataHintId(3, "AaCardMetadataHint"),
   @Deprecated(level = DeprecationLevel.ERROR, message = "Use ClientActionInsight instead.")
   DialerClickEventHintId(4, "DialerClickEventHint"),
   CrossDeviceIntentHintId(5, "CrossDeviceIntentHint"),
@@ -86,4 +86,5 @@ enum class PrototypeHintId(@field:IntRange(from = 1) val uid: Int, val typeName:
   DialerMetadataHintId(16, "DialerMetadataHint"),
   MessageMetadataHintId(17, "MessageMetadataHint"),
   GboardHintId(18, "GboardHint"),
+  RichCardErrorHintId(19, "RichCardErrorHint"),
 }

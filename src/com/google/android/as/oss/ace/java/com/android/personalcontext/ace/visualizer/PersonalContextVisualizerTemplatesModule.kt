@@ -22,13 +22,10 @@ import com.android.personalcontext.ace.visualizer.templates.message.MessageVisua
 import dagger.Lazy
 import dagger.Module
 import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
 
 /** Dagger module for personal context visualizer templates. */
 @Module
-@InstallIn(SingletonComponent::class)
 interface PersonalContextVisualizerTemplatesModule {
   companion object {
 

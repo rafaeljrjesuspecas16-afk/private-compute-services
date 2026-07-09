@@ -41,6 +41,7 @@ android_library(
         "//src/com/google/android/as/oss/feedback/domain:view_feedback_data",
         "//src/com/google/android/as/oss/feedback/proto:entity_feedback_dialog_data_kt_proto_lite",
         "//src/com/google/android/as/oss/feedback/proto:feedback_tag_data_kt_proto_lite",
+        "//src/com/google/android/as/oss/feedback/proto/dataservice:data_service_kt_proto_lite",
         "//src/com/google/android/as/oss/feedback/proto/gateway:spoon_kt_proto_lite",
         "//src/com/google/android/as/oss/feedback/serviceclient:service_client",
         "//src/com/google/android/as/oss/logging/uiusage/api:usage_data_service_kt_proto_lite",
@@ -122,6 +123,7 @@ android_library(
     deps = [
         ":scroll_child_into_view",
         "//src/com/google/android/as/oss/feedback/domain:feedback_ui_state",
+        "//src/com/google/android/as/oss/feedback/domain:feedback_view_model",
         "//src/com/google/android/as/oss/feedback/domain:view_feedback_data",
         "//src/com/google/android/as/oss/feedback/quartz/serviceclient:quartz_service_client",
         "//src/com/google/android/as/oss/feedback/serviceclient:service_client",
@@ -137,6 +139,8 @@ android_library(
         "//third_party/java/androidx/compose/ui/geometry",
         "//third_party/java/androidx/compose/ui/text",
         "//third_party/java/androidx/compose/ui/unit",
+        "//third_party/java/androidx/hilt/lifecycle_viewmodel_compose",
+        "//third_party/java/androidx/hilt/navigation_compose",
     ],
 )
 
@@ -251,6 +255,5 @@ android_library(
         "//third_party/java/androidx/compose/runtime",
         "//third_party/java/androidx/compose/ui",
         "//third_party/java/androidx/compose/ui/unit",
-        "//third_party/kotlin/kotlinx_coroutines:kotlinx_coroutines-jvm",
     ],
 )

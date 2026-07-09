@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.android.personalcontext.ace.common.FindHintUtils.findContextHint
 import com.android.personalcontext.ace.common.wrappers.IPublishedContextInsight
+import com.android.personalcontext.ace.visualizer.compat.FlexFontCompat
 import com.android.personalcontext.ace.visualizer.compat.InsightGridCompat
 import com.android.personalcontext.ace.visualizer.compat.VisualMetadataCompat
 import com.android.personalcontext.ace.visualizer.templates.VisualizerTemplate
@@ -49,6 +50,7 @@ internal constructor(
   private val callInsightConverter: CallInsightConverter,
   private val insightGridCompat: InsightGridCompat,
   private val visualMetadataCompat: VisualMetadataCompat,
+  private val flexFontCompat: FlexFontCompat,
 ) : VisualizerTemplate {
 
   override fun handleInsight(
@@ -71,6 +73,7 @@ internal constructor(
         widget = widget,
         insightGridCompat = insightGridCompat,
         isFullScreen = isFullScreen,
+        flexFontCompat = flexFontCompat,
       )
     }
   }
@@ -85,9 +88,10 @@ private fun CallTemplate(
   widget: CallVisualizerWidget,
   insightGridCompat: InsightGridCompat,
   isFullScreen: Boolean,
+  flexFontCompat: FlexFontCompat,
 ) {
   CompositionLocalProvider(LocalInsightGridCompat provides insightGridCompat) {
-    CallTheme {
+    CallTheme(flexFontCompat = flexFontCompat) {
       val backgrounds =
         if (isFullScreen) {
           CallWidgetBackgrounds(
@@ -114,6 +118,7 @@ private fun CallTemplate(
 
 @Composable
 private fun CallTheme(
+  flexFontCompat: FlexFontCompat,
   darkTheme: Boolean = isSystemInDarkTheme(),
   dynamicColor: Boolean = true,
   content: @Composable () -> Unit,
@@ -129,5 +134,7 @@ private fun CallTheme(
       else -> lightColorScheme()
     }
 
-  MaterialTheme(colorScheme = colorScheme, typography = Typography()) { content() }
+  val dynamicTypography = flexFontCompat.flexFont(typography = Typography(), round = 0f)
+
+  MaterialTheme(colorScheme = colorScheme, typography = dynamicTypography) { content() }
 }

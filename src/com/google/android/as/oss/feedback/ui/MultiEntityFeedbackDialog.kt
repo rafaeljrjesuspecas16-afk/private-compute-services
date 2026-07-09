@@ -90,6 +90,7 @@ import com.google.android.`as`.oss.feedback.api.gateway.QuartzCUJ
 import com.google.android.`as`.oss.feedback.api.gateway.SpoonCUJ
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.LegacyV1
+import com.google.android.`as`.oss.feedback.domain.FeedbackBodyItem
 import com.google.android.`as`.oss.feedback.domain.FeedbackDialogMode.EDITING_FEEDBACK
 import com.google.android.`as`.oss.feedback.domain.FeedbackDialogMode.VIEWING_FEEDBACK_DONATION_DATA
 import com.google.android.`as`.oss.feedback.domain.FeedbackEntityContent
@@ -170,11 +171,8 @@ fun MultiEntityFeedbackDialog(
         )
         viewModel.updateTagSelection(entity, sentiment, tag, selected, singleSelection)
       },
-      onTagGroundTruthSelected = { entity, sentiment, tag, option ->
-        // TODO: Do something with this selection.
-        Toast.makeText(context, "Selected: ${option.label}", Toast.LENGTH_SHORT).show()
-
-        viewModel.updateTagGroundTruthSelection(entity, sentiment, tag, option)
+      onTagGroundTruthToggled = { entity, sentiment, tag, option ->
+        viewModel.toggleTagGroundTruthSelection(entity, sentiment, tag, option)
       },
       onFreeFormTextChanged = { entity, value -> viewModel.updateFreeFormText(entity, value) },
       onOptInCheckedChanged = { checked ->
@@ -184,9 +182,9 @@ fun MultiEntityFeedbackDialog(
           enabledState = if (checked) ENABLED_STATE_ENABLED else ENABLED_STATE_DISABLED,
         )
         if (uiState.enableViewDataDialogV2MultiEntity == true) {
-          viewModel.updateAllOptInChecked(checked)
+          viewModel.updateAllDataCollectionOptInStates(checked)
         } else {
-          viewModel.updateOptInChecked(LegacyV1, checked)
+          viewModel.updateDataCollectionOptInState(LegacyV1, checked)
         }
       },
       onViewDataClicked = {
@@ -203,7 +201,7 @@ fun MultiEntityFeedbackDialog(
           interactionType = InteractionType.INTERACTION_TYPE_VIEW,
         )
       },
-      onViewDataSectionCheckedChange = viewModel::updateOptInChecked,
+      onViewDataSectionCheckedChange = viewModel::updateDataCollectionOptInState,
       onViewDataScreenBackPressed = { viewModel.updateFeedbackDialogMode(EDITING_FEEDBACK) },
       onSendFeedback = {
         viewModel.logUiEvent(
@@ -248,7 +246,7 @@ private fun MultiEntityFeedbackBottomSheet(
       selected: Boolean,
       singleSelection: Boolean,
     ) -> Unit,
-  onTagGroundTruthSelected:
+  onTagGroundTruthToggled:
     (
       entity: FeedbackEntityContent,
       sentiment: FeedbackRatingSentiment,
@@ -259,7 +257,8 @@ private fun MultiEntityFeedbackBottomSheet(
   onOptInCheckedChanged: (Boolean) -> Unit,
   onViewDataClicked: () -> Unit,
   onViewDataScreenDisplayed: () -> Unit,
-  onViewDataSectionCheckedChange: (DataCollectionCategory, Boolean) -> Unit,
+  onViewDataSectionCheckedChange:
+    (DataCollectionCategory, Boolean, FeedbackBodyItem.CheckableListItem?) -> Unit,
   onViewDataScreenBackPressed: () -> Unit,
   onSendFeedback: () -> Unit,
   onDismissRequest: () -> Unit,
@@ -293,7 +292,7 @@ private fun MultiEntityFeedbackBottomSheet(
             onEntitySentimentChanged = onEntitySentimentChanged,
             onTagsShown = onTagsShown,
             onTagSelectionChanged = onTagSelectionChanged,
-            onTagGroundTruthSelected = onTagGroundTruthSelected,
+            onTagGroundTruthToggled = onTagGroundTruthToggled,
             onFreeFormTextChanged = onFreeFormTextChanged,
             onOptInCheckedChanged = onOptInCheckedChanged,
             onViewDataClicked = onViewDataClicked,
@@ -335,7 +334,7 @@ private fun MultiEntityFeedbackEditingScreen(
       selected: Boolean,
       singleSelection: Boolean,
     ) -> Unit,
-  onTagGroundTruthSelected:
+  onTagGroundTruthToggled:
     (
       entity: FeedbackEntityContent,
       sentiment: FeedbackRatingSentiment,
@@ -384,9 +383,15 @@ private fun MultiEntityFeedbackEditingScreen(
               if (uiState.enableGroundTruthSelectorMultiEntity) {
                 entity.negativeRatingData.tagsList.associate { tag ->
                   val filteredGroundTruthList =
-                    tag.groundTruthOptionsList
-                      .map { optionText -> GroundTruthData(optionText) }
-                      .filter { groundTruthData -> groundTruthData.label != entity.entityContent }
+                    if (tag.groundTruthItemsList.isNotEmpty()) {
+                      tag.groundTruthItemsList
+                        .map { item -> GroundTruthData(item.text, item.sourceApp) }
+                        .filter { groundTruthData -> groundTruthData.label != entity.entityContent }
+                    } else {
+                      tag.groundTruthOptionsList
+                        .map { optionText -> GroundTruthData(optionText) }
+                        .filter { groundTruthData -> groundTruthData.label != entity.entityContent }
+                    }
                   tag to filteredGroundTruthList
                 }
               } else {
@@ -401,11 +406,11 @@ private fun MultiEntityFeedbackEditingScreen(
                 ?.feedbackUiRenderingData
                 ?.feedbackDialogGroundTruthTitle ?: "",
             onSelectedSentimentChanged = { onEntitySentimentChanged(entity.entityContent, it) },
-            onTagSelectionChanged = { entity, sentiment, tag, selected ->
+            onTagSelectionChanged = { entityContent, sentiment, tag, selected ->
               val singleSelection = foundQuartzCuj == QuartzCUJ.QUARTZ_CUJ_KEY_TYPE
-              onTagSelectionChanged(entity, sentiment, tag, selected, singleSelection)
+              onTagSelectionChanged(entityContent, sentiment, tag, selected, singleSelection)
             },
-            onTagGroundTruthSelected = onTagGroundTruthSelected,
+            onTagGroundTruthToggled = onTagGroundTruthToggled,
             onTagsShown = onTagsShown,
             onFreeFormTextChanged = onFreeFormTextChanged,
           )
@@ -415,7 +420,7 @@ private fun MultiEntityFeedbackEditingScreen(
       FeedbackOptInControl(
         modifier = Modifier.fillMaxWidth(),
         optInCheckboxContentDescription = data.optInCheckboxContentDescription,
-        optInChecked = uiState.optInChecked.any { it.value },
+        optInChecked = uiState.dataCollectionStates.values.any { it.isSelected() },
         onOptInCheckedChanged = onOptInCheckedChanged,
         viewDataTitle = data.feedbackDialogOptInV2Title,
         viewDataDescription = data.feedbackDialogOptInV2Description,
@@ -442,8 +447,9 @@ private fun MultiFeedbackEntityEditingContent(
   groundTruthTitle: String,
   selectedSentiment: FeedbackRatingSentiment,
   tagsSelection: Map<FeedbackRatingSentiment, Map<FeedbackTagData, Boolean>>,
-  tagsGroundTruthOptions: Map<FeedbackTagData, List<GroundTruthData>?>,
-  tagsGroundTruthSelection: Map<FeedbackRatingSentiment, Map<FeedbackTagData, GroundTruthData?>>,
+  tagsGroundTruthOptions: Map<FeedbackTagData, List<GroundTruthData>>,
+  tagsGroundTruthSelection:
+    Map<FeedbackRatingSentiment, Map<FeedbackTagData, Set<GroundTruthData>>>,
   onSelectedSentimentChanged: (FeedbackRatingSentiment) -> Unit,
   onTagSelectionChanged:
     (
@@ -452,7 +458,7 @@ private fun MultiFeedbackEntityEditingContent(
       tag: FeedbackTagData,
       selected: Boolean,
     ) -> Unit,
-  onTagGroundTruthSelected:
+  onTagGroundTruthToggled:
     (
       entity: FeedbackEntityContent,
       sentiment: FeedbackRatingSentiment,
@@ -495,8 +501,8 @@ private fun MultiFeedbackEntityEditingContent(
         onTagSelectionChanged = { tag, selected ->
           onTagSelectionChanged(entity.entityContent, selectedSentiment, tag, selected)
         },
-        onTagGroundTruthSelected = { tag, option ->
-          onTagGroundTruthSelected(entity.entityContent, selectedSentiment, tag, option)
+        onTagGroundTruthToggled = { tag, option ->
+          onTagGroundTruthToggled(entity.entityContent, selectedSentiment, tag, option)
         },
         onFreeFormTextChanged = { onFreeFormTextChanged(entity.entityContent, it) },
       )
@@ -595,13 +601,13 @@ private fun EntityHeaderContent(
 private fun EntityBodyContent(
   ratingData: FeedbackRatingData?,
   tagsSelection: Map<FeedbackTagData, Boolean>,
-  tagsGroundTruthOptions: Map<FeedbackTagData, List<GroundTruthData>?>,
-  tagsGroundTruthSelection: Map<FeedbackTagData, GroundTruthData?>,
+  tagsGroundTruthOptions: Map<FeedbackTagData, List<GroundTruthData>>,
+  tagsGroundTruthSelection: Map<FeedbackTagData, Set<GroundTruthData>>,
   freeFormText: String,
   groundTruthTitle: String,
   onTagsShown: (tags: List<FeedbackTagData>) -> Unit,
   onTagSelectionChanged: (FeedbackTagData, Boolean) -> Unit,
-  onTagGroundTruthSelected: (FeedbackTagData, GroundTruthData) -> Unit,
+  onTagGroundTruthToggled: (FeedbackTagData, GroundTruthData) -> Unit,
   onFreeFormTextChanged: (String) -> Unit,
 ) {
   if (ratingData == null) return
@@ -632,7 +638,7 @@ private fun EntityBodyContent(
         tagsGroundTruthSelection = tagsGroundTruthSelection,
         onTagsShown = onTagsShown,
         onTagSelectionChanged = onTagSelectionChanged,
-        onTagGroundTruthSelected = onTagGroundTruthSelected,
+        onTagGroundTruthToggled = onTagGroundTruthToggled,
       )
     }
 
@@ -668,7 +674,8 @@ private fun MultiEntityFeedbackViewFeedbackScreen(
   uiState: FeedbackUiState,
   data: MultiFeedbackDialogData,
   onViewDataScreenDisplayed: () -> Unit,
-  onViewDataSectionCheckedChange: (DataCollectionCategory, Boolean) -> Unit,
+  onViewDataSectionCheckedChange:
+    (DataCollectionCategory, Boolean, FeedbackBodyItem.CheckableListItem?) -> Unit,
   onViewDataSectionExpanded: () -> Unit,
   onViewDataScreenBackPressed: () -> Unit,
   onSendFeedback: () -> Unit,

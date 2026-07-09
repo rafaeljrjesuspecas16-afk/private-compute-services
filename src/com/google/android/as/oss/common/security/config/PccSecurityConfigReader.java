@@ -73,6 +73,18 @@ public class PccSecurityConfigReader extends AbstractConfigReader<PccSecurityCon
               .build(),
           /* merge= */ false);
 
+  public static final ProtoFlag<PackageSecurityInfo> GBOARD_CANARY_PACKAGE_SECURITY_INFO =
+      ProtoFlag.create(
+          FLAG_PREFIX + "gboard_canary_package_security_info",
+          PackageSecurityInfo.newBuilder()
+              .setPackageName("com.google.android.inputmethod.latin.canary")
+              .addAllowedReleaseKeys(
+                  "7ce83c1b71f3d572fed04c8d40c5cb10ff75e6d87d9df6fbd53f0468c2905053")
+              .addAllowedTestKeys(
+                  "d22cc500299fb22873a01a010de1c82fbe4d061119b94814dd301dab50cb7678")
+              .build(),
+          /* merge= */ false);
+
   public static final ProtoFlag<PackageSecurityInfo> AGSA_PACKAGE_SECURITY_INFO =
       ProtoFlag.create(
           FLAG_PREFIX + "agsa_package_security_info",
@@ -129,6 +141,16 @@ public class PccSecurityConfigReader extends AbstractConfigReader<PccSecurityCon
               .build(),
           /* merge= */ false);
 
+  public static final ProtoFlag<PackageSecurityInfo> BLUEFLAX_PACKAGE_SECURITY_INFO =
+      ProtoFlag.create(
+          FLAG_PREFIX + "blueflax_package_security_info",
+          PackageSecurityInfo.newBuilder()
+              .setPackageName("com.google.android.apps.pixel.blueflax")
+              .addAllowedTestKeys(
+                  "103938ee4537e59e8ee792f654504fb8346fc6b346d0bbc4415fc339fcfc8ec1")
+              .build(),
+          /* merge= */ false);
+
   private static final BooleanFlag ENABLE_SECURITY_CHECK =
       BooleanFlag.create(FLAG_PREFIX + "enable_security_check", false);
 
@@ -158,6 +180,7 @@ public class PccSecurityConfigReader extends AbstractConfigReader<PccSecurityCon
         .setPsiPackageSecurityInfo(flagManager.get(PSI_PACKAGE_SECURITY_INFO))
         .setGboardPackageSecurityInfo(flagManager.get(GBOARD_PACKAGE_SECURITY_INFO))
         .setAgsaPackageSecurityInfo(flagManager.get(AGSA_PACKAGE_SECURITY_INFO))
+        .setBlueflaxPackageSecurityInfo(flagManager.get(BLUEFLAX_PACKAGE_SECURITY_INFO))
         .setEnableAllowlistedOnly(flagManager.get(ENABLE_SECURITY_CHECK))
         .setSecurityInfoList(
             PackageSecurityInfoList.newBuilder()
@@ -166,11 +189,13 @@ public class PccSecurityConfigReader extends AbstractConfigReader<PccSecurityCon
                             flagManager.get(ASI_PACKAGE_SECURITY_INFO),
                             flagManager.get(PSI_PACKAGE_SECURITY_INFO),
                             flagManager.get(GBOARD_PACKAGE_SECURITY_INFO),
+                            flagManager.get(GBOARD_CANARY_PACKAGE_SECURITY_INFO),
                             flagManager.get(AGSA_PACKAGE_SECURITY_INFO),
                             flagManager.get(AICORE_PACKAGE_SECURITY_INFO),
                             flagManager.get(NEXUS_LAUNCHER_PACKAGE_SECURITY_INFO),
                             flagManager.get(PLAYPROTECT_PACKAGE_SECURITY_INFO),
-                            flagManager.get(SAFETYCORE_PACKAGE_SECURITY_INFO))
+                            flagManager.get(SAFETYCORE_PACKAGE_SECURITY_INFO),
+                            flagManager.get(BLUEFLAX_PACKAGE_SECURITY_INFO))
                         .collect(toImmutableList()))
                 .build())
         .build();

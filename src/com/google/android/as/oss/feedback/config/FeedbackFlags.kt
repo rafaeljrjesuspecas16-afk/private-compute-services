@@ -30,4 +30,12 @@ object FeedbackFlags {
     BooleanFlag.create("${PREFIX}enable_ground_truth_selector_single_entity", false)
   val ENABLE_GROUND_TRUTH_SELECTOR_MULTI_ENTITY =
     BooleanFlag.create("${PREFIX}enable_ground_truth_selector_multi_entity", false)
+  val ENABLE_FINE_GRAINED_VIEW_DATA_DIALOG =
+    BooleanFlag.create("${PREFIX}enable_fine_grained_view_data_dialog", false)
+  val ENABLE_DEFAULT_GENERAL_SPOON_DONATION_OPT_IN =
+    BooleanFlag.create("${PREFIX}enable_default_general_spoon_donation_opt_in", false)
+  val ENABLE_DEFAULT_DONATION_OPT_IN_L1 =
+    BooleanFlag.create("${PREFIX}enable_default_donation_opt_in_l1", false)
+  val ENABLE_DEFAULT_DONATION_OPT_IN_L0 =
+    BooleanFlag.create("${PREFIX}enable_default_donation_opt_in_l0", false)
 }

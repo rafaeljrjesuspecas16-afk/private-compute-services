@@ -96,6 +96,7 @@ fun FullScreenCallWidget(widget: CallVisualizerWidget) {
       cards = generalCards,
       numGeneralCardsPerSource = Int.MAX_VALUE,
       useCardContainer = true,
+      horizontalPadding = 16.dp,
     )
 
     widget.aiDisclaimer?.let { aiDisclaimer ->

@@ -87,37 +87,6 @@ data class CallVisualizerDetailedCard(
 )
 
 /**
- * Data class for the generic content descriptions in the Call Visualizer Widget.
- *
- * @property goodFeedbackContentDescription The content description for the good feedback button.
- * @property badFeedbackContentDescription The content description for the bad feedback button.
- * @property feedbackSubmittedStateDescription The content description for the feedback submitted
- *   state.
- * @property feedbackNotSubmittedStateDescription The content description for the feedback not
- *   submitted state.
- * @property cardSentimentLabel The label for the card sentiment.
- * @property cardExpandedAccessibilityStateDescription The accessibility state description for the
- *   card expanded state.
- * @property cardCollapsedAccessibilityStateDescription The accessibility state description for the
- *   card collapsed state.
- * @property cardCollapsedAccessibilityClickLabel The accessibility click label for the card
- *   collapsed state.
- * @property cardExpandedAccessibilityClickLabel The accessibility click label for the card expanded
- *   state.
- */
-data class CallVisualizerGenericContentDescriptions(
-  val goodFeedbackContentDescription: String,
-  val badFeedbackContentDescription: String,
-  val feedbackSubmittedStateDescription: String,
-  val feedbackNotSubmittedStateDescription: String,
-  val cardSentimentLabel: String,
-  val cardExpandedAccessibilityStateDescription: String,
-  val cardCollapsedAccessibilityStateDescription: String,
-  val cardCollapsedAccessibilityClickLabel: String,
-  val cardExpandedAccessibilityClickLabel: String,
-)
-
-/**
  * Data class for the Call Visualizer CTA display more results.
  *
  * @property title The title of the CTA.

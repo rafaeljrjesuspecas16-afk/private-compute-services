@@ -77,6 +77,7 @@ public abstract class PrivateInferenceConfig {
         .setArateaAuthMode(DEFAULT_ARATEA_AUTH_MODE)
         .setProxyAuthMode(DEFAULT_PROXY_AUTH_MODE)
         .setPiServerChannelIdleTimeoutMinutes(DEFAULT_PI_SERVER_CHANNEL_IDLE_TIMEOUT_MINUTES)
+        .setUseEndpointSpecificVerificationKeys(DEFAULT_USE_ENDPOINT_SPECIFIC_VERIFICATION_KEYS)
         .setIpRelayFallbackMode(DEFAULT_IP_RELAY_FALLBACK_MODE);
   }
 
@@ -88,6 +89,9 @@ public abstract class PrivateInferenceConfig {
 
   /** Returns the endpoint URL for the Private Inference service. */
   public abstract String endpointUrl();
+
+  /** Returns whether to use endpoint specific verification keys. */
+  public abstract boolean useEndpointSpecificVerificationKeys();
 
   // TODO: Remove this flag before launch if needed.
   /** Set to true to send device authentication to the server. */
@@ -246,6 +250,8 @@ public abstract class PrivateInferenceConfig {
   public static final IpRelayFallbackFlag.Mode DEFAULT_IP_RELAY_FALLBACK_MODE =
       IpRelayFallbackFlag.Mode.DEFAULT;
 
+  public static final boolean DEFAULT_USE_ENDPOINT_SPECIFIC_VERIFICATION_KEYS = false;
+
   /** Builder for {@link PrivateInferenceConfig}. */
   @AutoValue.Builder
   public abstract static class Builder {
@@ -312,6 +318,8 @@ public abstract class PrivateInferenceConfig {
     public abstract Builder setPiServerChannelIdleTimeoutMinutes(long minutes);
 
     public abstract Builder setIpRelayFallbackMode(IpRelayFallbackFlag.Mode mode);
+
+    public abstract Builder setUseEndpointSpecificVerificationKeys(boolean value);
 
     public abstract PrivateInferenceConfig build();
   }

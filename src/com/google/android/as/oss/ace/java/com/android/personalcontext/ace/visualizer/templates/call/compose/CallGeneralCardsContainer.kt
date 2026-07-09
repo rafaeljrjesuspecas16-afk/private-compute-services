@@ -28,6 +28,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -64,7 +65,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
@@ -89,6 +93,7 @@ fun LazyListScope.CallGeneralCardsContainer(
   cards: List<List<CallVisualizerGeneralCard>>,
   numGeneralCardsPerSource: Int,
   useCardContainer: Boolean = false,
+  horizontalPadding: Dp = 0.dp,
 ) {
   // Step 1. Get the general cards that should be displayed
   val generalCardsToDisplay = getGeneralCardsToDisplay(cards, numGeneralCardsPerSource)
@@ -108,6 +113,7 @@ fun LazyListScope.CallGeneralCardsContainer(
       isFirstCard = isFirstCard,
       isLastCard = isLastCard,
       useCardContainer = useCardContainer,
+      horizontalPadding = horizontalPadding,
     )
   }
 }
@@ -118,6 +124,7 @@ private fun CallGeneralCardContainer(
   isFirstCard: Boolean,
   isLastCard: Boolean,
   useCardContainer: Boolean,
+  horizontalPadding: Dp,
 ) {
   val cardBackground = LocalCallWidgetBackgrounds.current.cardBackground
   val containerColor =
@@ -134,16 +141,16 @@ private fun CallGeneralCardContainer(
           bottomEnd = if (isLastCard) 24.dp else 0.dp,
         ),
     ) {
-      CallGeneralCardContent(card = card)
+      CallGeneralCardContent(card = card, horizontalPadding = horizontalPadding)
     }
   } else {
-    CallGeneralCardContent(card = card)
+    CallGeneralCardContent(card = card, horizontalPadding = horizontalPadding)
   }
 }
 
 /** Layout for a single general card. */
 @Composable
-private fun CallGeneralCardContent(card: CallVisualizerGeneralCard) {
+private fun CallGeneralCardContent(card: CallVisualizerGeneralCard, horizontalPadding: Dp) {
   // Metrics logging START
   val context = LocalContext.current
   val insightEventReporter = LocalInsightEventReporter.current
@@ -189,7 +196,7 @@ private fun CallGeneralCardContent(card: CallVisualizerGeneralCard) {
             Log.i(TAG, "[CallEmbedded] Expand state updated. isExpanded: $isExpanded")
           },
         )
-        .padding(16.dp)
+        .padding(vertical = 16.dp, horizontal = horizontalPadding)
   ) {
     // Calculate the top padding needed for the date Text to align its top edge with the
     // title Text.
@@ -217,11 +224,24 @@ private fun CallGeneralCardContent(card: CallVisualizerGeneralCard) {
       }
       Column(modifier = Modifier.weight(1f)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-          Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.Top) {
+          Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.SpaceBetween,
+          ) {
             Text(
               modifier = Modifier.weight(1f, fill = false).animateContentSize(),
               text = card.title,
-              style = titleTextStyle,
+              style =
+                titleTextStyle.copy(
+                  lineBreak =
+                    LineBreak(
+                      strategy = LineBreak.Strategy.HighQuality,
+                      strictness = LineBreak.Strictness.Strict,
+                      wordBreak = LineBreak.WordBreak.Phrase,
+                    ),
+                  hyphens = Hyphens.Auto,
+                ),
               color = MaterialTheme.colorScheme.onSurface,
               maxLines =
                 if (isExpanded) {
@@ -230,13 +250,6 @@ private fun CallGeneralCardContent(card: CallVisualizerGeneralCard) {
                   1
                 },
               overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-              modifier = Modifier.padding(top = dateTopPaddingDp),
-              text = "•",
-              style = dateTextStyle,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(

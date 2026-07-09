@@ -23,8 +23,8 @@ import com.android.personalcontext.ace.client.prototype.PrototypeHintId.ThemeHin
 /**
  * A hint for the theme.
  *
- * @property type The type of theme.
- * @property data The data sent by the client.
+ * @property type The type of theme config.
+ * @property data The value of the config.
  */
 data class ThemeHint(val type: ThemeType, val data: Boolean) : PrototypeHint(ThemeHintId, this) {
 

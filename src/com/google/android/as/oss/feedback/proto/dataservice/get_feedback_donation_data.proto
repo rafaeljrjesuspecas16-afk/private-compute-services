@@ -65,7 +65,7 @@ message GetFeedbackDonationDataResponse {
 // data screen V2 for notification and use V1 instead. It's determined by data
 // suppliers rather than a configuration flag.
 //
-// Next ID: 26
+// Next ID: 30
 message FeedbackUiRenderingData {
   string feedback_dialog_good_feedback_title = 5
      ;
@@ -125,10 +125,26 @@ message FeedbackUiRenderingData {
   string feedback_dialog_ground_truth_title = 25
      ;
 
+  string feedback_source_l1_tile_title = 26
+     ;
+
+  string feedback_source_document_l0_tile_title = 27
+     ;
+
+  // The title of the additional comment section in the feedback dialog.
+  // In addition to free form text, this allows the caller app to collect
+  // additional information via a text input.
+  string feedback_additional_comment_title = 28
+     ;
+
+  // The hint text of the additional comment section in the feedback dialog.
+  string feedback_additional_comment_hint = 29
+     ;
+
   FeedbackViewDataCategoryTitles feedback_view_data_category_titles = 22;
 }
 
-// Next ID: 11
+// Next ID: 12
 message FeedbackViewDataCategoryTitles {
   string triggering_messages_title = 1
      ;
@@ -155,4 +171,6 @@ message FeedbackViewDataCategoryTitles {
 
   string quartz_model_outputs_title = 10
      ;
+
+  string failure_reason_title = 11;
 }

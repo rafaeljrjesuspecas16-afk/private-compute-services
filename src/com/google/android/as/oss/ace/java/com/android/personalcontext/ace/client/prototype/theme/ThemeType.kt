@@ -16,7 +16,8 @@
 
 package com.android.personalcontext.ace.client.prototype.theme
 
-/** The type of theme. */
+/** The type of theme config. */
 enum class ThemeType {
-  SHOW_ANIMATION_V2
+  SHOW_ANIMATION_V2,
+  SHOW_BRANDED_ICON,
 }

@@ -94,10 +94,9 @@ public abstract class ConnectionDetails implements Parcelable {
     /** A Lightweight download of nonce challenge from the Key Attestation Validation Service. */
     ATTESTATION_REQUEST,
     /** A survey request using HTTPS */
-    SURVEY_REQUEST
+    SURVEY_REQUEST,
     FEEDBACK_REQUEST
   }
-
 
   /** All the connection types related to federated computations. */
   public static final ImmutableSet<ConnectionType> FC_CONNECTION_TYPES =

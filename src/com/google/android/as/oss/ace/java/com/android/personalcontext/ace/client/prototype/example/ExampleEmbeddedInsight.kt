@@ -24,7 +24,7 @@ import com.android.personalcontext.ace.client.prototype.PrototypeInsightId.Examp
 /** An insight for the example embedded use case. */
 data class ExampleEmbeddedInsight(
   val contactName: String,
-  override val originHints: Set<PublishedContextHint>,
+  override val originHints: Collection<PublishedContextHint>,
 ) : PrototypeContextInsight(ExampleEmbeddedInsightId, this) {
 
   override fun exportDataToBundle(bundle: Bundle) {

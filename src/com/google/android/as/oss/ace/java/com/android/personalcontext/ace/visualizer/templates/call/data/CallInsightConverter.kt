@@ -98,13 +98,6 @@ constructor(
         "[CallEmbedded] #toCallVisualizerWidget Expected mainInsight to be a CardInsight, actual: ${this.javaClass.simpleName}."
       )
 
-  /** Converts an [InsightCollection] to a list of [CallVisualizerDetailedCard]. */
-  private fun InsightCollection.toDetailedCards(): List<CallVisualizerDetailedCard> {
-    return this.insights.mapNotNull { detailedCardInsight: ContextInsight ->
-      detailedCardInsight.toSingleDetailedCard()
-    }
-  }
-
   /**
    * Converts an [InsightCollection] to a single [CallVisualizerDetailedCard].
    *

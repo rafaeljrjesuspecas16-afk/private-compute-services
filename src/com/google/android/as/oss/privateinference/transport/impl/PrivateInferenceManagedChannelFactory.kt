@@ -17,8 +17,8 @@
 package com.google.android.`as`.oss.privateinference.transport.impl
 
 import android.content.Context
-import android.net.http.ExportedFlags.proxyApis
 import android.os.Build
+import android.os.ext.SdkExtensions
 import androidx.annotation.RequiresExtension
 import com.google.android.`as`.oss.common.ExecutorAnnotations.PiExecutorQualifier
 import com.google.android.`as`.oss.logging.PcsStatsEnums.CountMetricId
@@ -106,6 +106,15 @@ constructor(
     }
   }
 
+  private fun proxyApisAvailable(): Boolean =
+    // Protects the call against SdkExtensions, which was introduced in API level 30 (R)
+    // http://[redacted]
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+      // HttpEngine's proxy APIs are available from API level 31 (S) with extension version 22.
+      // See
+      // http://[redacted]
+      SdkExtensions.getExtensionVersion(Build.VERSION_CODES.S) >= 22
+
   private suspend fun create(): ManagedChannel {
     val mode = transportFlag.mode()
     logger
@@ -119,6 +128,10 @@ constructor(
     val isIpRelayMode =
       mode == TransportFlag.Mode.CRONET_MAINLINE_IP_RELAY ||
         mode == TransportFlag.Mode.CRONET_STATIC_IP_RELAY
+
+    if (!isIpRelayMode) {
+      logger.atWarning().log("Private Inference is not going over an IP Blinding tunnel.")
+    }
 
     val proxyConfig =
       if (isIpRelayMode) {
@@ -154,7 +167,7 @@ constructor(
                 )
               createIpRelayChannelBuilder(CronetProviderType.STATIC, proxyConfig = proxyConfig)
             }
-            !proxyApis() -> {
+            !proxyApisAvailable() -> {
               logger
                 .atInfo()
                 .log(

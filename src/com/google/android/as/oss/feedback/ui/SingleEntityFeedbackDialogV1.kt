@@ -271,7 +271,7 @@ private fun EntityFeedbackContents(
           tagsSelection =
             uiState.tagsSelectionMap[data.entityContent].orEmpty()[data.ratingSentiment].orEmpty(),
           freeFormText = uiState.freeFormTextMap[data.entityContent].orEmpty(),
-          optInChecked = uiState.optInChecked.any { it.value },
+          optInChecked = uiState.dataCollectionStates.values.any { it.isSelected() },
           onFreeFormTextChanged = { viewModel.updateFreeFormText(data.entityContent, it) },
           onOptInCheckedChanged = {
             viewModel.logUiEvent(
@@ -285,9 +285,9 @@ private fun EntityFeedbackContents(
                 },
             )
             if (uiState.enableViewDataDialogV2SingleEntity) {
-              viewModel.updateAllOptInChecked(it)
+              viewModel.updateAllDataCollectionOptInStates(it)
             } else {
-              viewModel.updateOptInChecked(LegacyV1, it)
+              viewModel.updateDataCollectionOptInState(LegacyV1, it)
             }
           },
           onViewDataClicked = {
@@ -317,8 +317,8 @@ private fun EntityFeedbackContents(
             )
             viewModel.updateTagSelection(data.entityContent, data.ratingSentiment, tag, selected)
           },
-          onTagGroundTruthSelected = { tag, option ->
-            viewModel.updateTagGroundTruthSelection(
+          onTagGroundTruthToggled = { tag, option ->
+            viewModel.toggleTagGroundTruthSelection(
               entity = data.entityContent,
               sentiment = data.ratingSentiment,
               tag = tag,
@@ -342,8 +342,8 @@ private fun EntityFeedbackContents(
                 interactionType = InteractionType.INTERACTION_TYPE_VIEW,
               )
             },
-            onViewDataSectionCheckedChange = { category, checked ->
-              viewModel.updateOptInChecked(category, checked)
+            onViewDataSectionCheckedChange = { category, checked, _ ->
+              viewModel.updateDataCollectionOptInState(category, checked)
             },
             onViewDataSectionExpanded = {},
             onBackPressed = { viewModel.updateFeedbackDialogMode(EDITING_FEEDBACK) },
@@ -409,7 +409,7 @@ private fun EntityFeedbackEditingContent(
   modifier: Modifier = Modifier,
   data: EntityFeedbackDialogData,
   enableGroundTruthSelectorSingleEntity: Boolean,
-  tagsGroundTruthSelection: Map<FeedbackTagData, GroundTruthData?>,
+  tagsGroundTruthSelection: Map<FeedbackTagData, Set<GroundTruthData>>,
   tagsSelection: Map<FeedbackTagData, Boolean>,
   freeFormText: String,
   optInChecked: Boolean,
@@ -419,7 +419,7 @@ private fun EntityFeedbackEditingContent(
   onViewDataClicked: () -> Unit,
   onTagsShown: (List<FeedbackTagData>) -> Unit,
   onTagSelectionChanged: (FeedbackTagData, Boolean) -> Unit,
-  onTagGroundTruthSelected: (FeedbackTagData, GroundTruthData) -> Unit,
+  onTagGroundTruthToggled: (FeedbackTagData, GroundTruthData) -> Unit,
 ) {
   Column(modifier) {
     // 8.dp outside, 8.dp baked into the chips, total of 24.dp
@@ -451,7 +451,7 @@ private fun EntityFeedbackEditingContent(
         tags = tags,
         onTagsShown = onTagsShown,
         onTagSelectionChanged = onTagSelectionChanged,
-        onTagGroundTruthSelected = onTagGroundTruthSelected,
+        onTagGroundTruthToggled = onTagGroundTruthToggled,
       )
       // 8.dp baked into the chips, total of 32.dp
       Spacer(modifier = Modifier.height(24.dp))
@@ -533,12 +533,12 @@ private fun FeedbackTagChipsCompat(
   enableGroundTruthSelectorSingleEntity: Boolean,
   feedbackDialogGroundTruthTitle: String,
   data: EntityFeedbackDialogData,
-  tagsGroundTruthSelection: Map<FeedbackTagData, GroundTruthData?>,
+  tagsGroundTruthSelection: Map<FeedbackTagData, Set<GroundTruthData>>,
   tagsSelection: Map<FeedbackTagData, Boolean>,
   tags: List<FeedbackTagData>,
   onTagsShown: (List<FeedbackTagData>) -> Unit,
   onTagSelectionChanged: (FeedbackTagData, Boolean) -> Unit,
-  onTagGroundTruthSelected: (FeedbackTagData, GroundTruthData) -> Unit,
+  onTagGroundTruthToggled: (FeedbackTagData, GroundTruthData) -> Unit,
 ) {
   if (enableGroundTruthSelectorSingleEntity) {
     FeedbackTagChips(
@@ -550,15 +550,21 @@ private fun FeedbackTagChipsCompat(
       tagsGroupTruthOptions =
         tags.associate { tag ->
           val filteredGroundTruthList =
-            tag.groundTruthOptionsList
-              .map { optionText -> GroundTruthData(optionText) }
-              .filter { groundTruthData -> groundTruthData.label != data.entityContent }
+            if (tag.groundTruthItemsList.isNotEmpty()) {
+              tag.groundTruthItemsList
+                .map { item -> GroundTruthData(item.text, item.sourceApp) }
+                .filter { groundTruthData -> groundTruthData.label != data.entityContent }
+            } else {
+              tag.groundTruthOptionsList
+                .map { optionText -> GroundTruthData(optionText) }
+                .filter { groundTruthData -> groundTruthData.label != data.entityContent }
+            }
           tag to filteredGroundTruthList
         },
       tagsGroundTruthSelection = tagsGroundTruthSelection,
       onTagsShown = onTagsShown,
       onTagSelectionChanged = onTagSelectionChanged,
-      onTagGroundTruthSelected = onTagGroundTruthSelected,
+      onTagGroundTruthToggled = onTagGroundTruthToggled,
     )
   } else {
     SingleEntityFeedbackTagChipsV1(

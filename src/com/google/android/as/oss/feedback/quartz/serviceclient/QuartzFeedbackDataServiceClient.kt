@@ -21,6 +21,8 @@ import com.google.android.`as`.oss.feedback.api.dataservice.feedbackUiRenderingD
 import com.google.android.`as`.oss.feedback.api.gateway.QuartzCUJ
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategoryData
+import com.google.android.`as`.oss.feedback.domain.DataCollectionCategoryDataLegacy
+import com.google.android.`as`.oss.feedback.domain.FeedbackBodyItem
 import com.google.android.`as`.oss.feedback.domain.ViewFeedbackData
 import com.google.protobuf.Timestamp
 
@@ -156,11 +158,81 @@ data class QuartzFeedbackDonationData(
 
   override val dataCollectionCategories: Map<DataCollectionCategory, DataCollectionCategoryData>
     get() {
+      val titles = feedbackUiRenderingData.feedbackViewDataCategoryTitles
       return buildMap {
+        if (
+          typeData.equals(QuartzKeyTypeData()) ||
+            summarizationData.equals(QuartzKeySummarizationData())
+        ) {
+          put(
+            DataCollectionCategory.LegacyV1,
+            DataCollectionCategoryData(
+              header = titles.triggeringMessagesTitle,
+              items =
+                listOf(
+                  FeedbackBodyItem.SimpleText(
+                    id =
+                      if (quartzCuj == QuartzCUJ.QUARTZ_CUJ_KEY_TYPE) {
+                        QUARTZ_TYPE_ID
+                      } else {
+                        QUARTZ_SUMMARIZATION_ID
+                      },
+                    text = toString(),
+                  )
+                ),
+            ),
+          )
+        }
         if (notificationData != null) {
           put(
             DataCollectionCategory.NotificationContent,
             DataCollectionCategoryData(
+              header = titles.notificationContentTitle,
+              items =
+                listOf(
+                  FeedbackBodyItem.SimpleText(
+                    id = QUARTZ_NOTIFICATION_ID,
+                    text = getNotificationDataBody(),
+                  )
+                ),
+            ),
+          )
+        }
+        if (modelData != null) {
+          put(
+            DataCollectionCategory.QuartzModelOutputs,
+            DataCollectionCategoryData(
+              header = titles.quartzModelOutputsTitle,
+              items =
+                listOf(
+                  FeedbackBodyItem.SimpleText(id = QUARTZ_MODEL_ID, text = getModelOutputsBody())
+                ),
+            ),
+          )
+        }
+        if (appInfoData != null) {
+          put(
+            DataCollectionCategory.AppInfo,
+            DataCollectionCategoryData(
+              header = titles.appInfoTitle,
+              items =
+                listOf(
+                  FeedbackBodyItem.SimpleText(id = QUARTZ_APP_INFO_ID, text = getAppInfoBody())
+                ),
+            ),
+          )
+        }
+      }
+    }
+
+  override val dataCollectionCategoriesLegacy:
+    Map<DataCollectionCategory, DataCollectionCategoryDataLegacy>
+    get() {
+      return buildMap {
+        if (notificationData != null) {
+          put(
+            DataCollectionCategory.NotificationContent,
+            DataCollectionCategoryDataLegacy(
               header =
                 feedbackUiRenderingData.feedbackViewDataCategoryTitles.notificationContentTitle,
               body = getNotificationDataBody(),
@@ -170,7 +242,7 @@ data class QuartzFeedbackDonationData(
         if (modelData != null) {
           put(
             DataCollectionCategory.QuartzModelOutputs,
-            DataCollectionCategoryData(
+            DataCollectionCategoryDataLegacy(
               header =
                 feedbackUiRenderingData.feedbackViewDataCategoryTitles.quartzModelOutputsTitle,
               body = getModelOutputsBody(),
@@ -179,7 +251,7 @@ data class QuartzFeedbackDonationData(
         }
         put(
           DataCollectionCategory.AppInfo,
-          DataCollectionCategoryData(
+          DataCollectionCategoryDataLegacy(
             header = feedbackUiRenderingData.feedbackViewDataCategoryTitles.appInfoTitle,
             body = getAppInfoBody(),
           ),
@@ -363,6 +435,14 @@ data class QuartzFeedbackDonationData(
         else -> {}
       }
     }
+  }
+
+  companion object {
+    private const val QUARTZ_SUMMARIZATION_ID = "quartz_summarization"
+    private const val QUARTZ_TYPE_ID = "quartz_type"
+    private const val QUARTZ_NOTIFICATION_ID = "quartz_notification"
+    private const val QUARTZ_MODEL_ID = "quartz_model"
+    private const val QUARTZ_APP_INFO_ID = "quartz_app_info"
   }
 }
 

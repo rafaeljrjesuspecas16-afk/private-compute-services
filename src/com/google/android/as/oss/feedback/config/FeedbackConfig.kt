@@ -29,6 +29,12 @@ data class FeedbackConfig(
   val enableGroundTruthSelectorSingleEntity: Boolean,
   // Whether to enable the ground truth selector for multi entity feedback.
   val enableGroundTruthSelectorMultiEntity: Boolean,
-  // Default opt-in state for each CUJ's data collection category. .
+  // Default opt-in state for each CUJ's data collection category.
   val dataCollectionCategoryDefaultOptIn: Map<String, List<DataCollectionCategory>>,
+  // Whether to enable the fine grained view data dialog.
+  val enableFineGrainedViewDataDialog: Boolean,
+  // Whether to enable default opt in for Memory L1 data.
+  val enableDefaultDonationOptInL1: Boolean,
+  // Whether to enable default opt in for Memory L0 data.
+  val enableDefaultDonationOptInL0: Boolean,
 )

@@ -38,19 +38,24 @@ import com.google.android.`as`.oss.feedback.api.gateway.feedbackCUJ
 import com.google.android.`as`.oss.feedback.api.gateway.logFeedbackV2Request
 import com.google.android.`as`.oss.feedback.api.gateway.memoryEntity
 import com.google.android.`as`.oss.feedback.api.gateway.runtimeConfig
+import com.google.android.`as`.oss.feedback.api.gateway.sourceDocument
 import com.google.android.`as`.oss.feedback.api.gateway.spoonFeedbackDataDonation
 import com.google.android.`as`.oss.feedback.api.gateway.spoonUserInput
 import com.google.android.`as`.oss.feedback.api.gateway.structuredUserInput
 import com.google.android.`as`.oss.feedback.api.gateway.userDonation
 import com.google.android.`as`.oss.feedback.config.FeedbackConfig
+import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.FailureReason
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.IntentQueries
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.LegacyV1
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.MemoryEntities
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.ModelOutputs
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.SelectedEntityContent
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.TriggeringMessages
+import com.google.android.`as`.oss.feedback.domain.OptInSelection.MultiSelection
+import com.google.android.`as`.oss.feedback.domain.OptInSelection.SingleSelection
 import com.google.android.`as`.oss.feedback.gateway.FeedbackHttpClient
 import com.google.android.`as`.oss.feedback.quartz.serviceclient.QuartzFeedbackDataServiceClient
+import com.google.android.`as`.oss.feedback.quartz.serviceclient.QuartzFeedbackDonationData
 import com.google.android.`as`.oss.feedback.quartz.utils.QuartzDataHelper
 import com.google.android.`as`.oss.feedback.serviceclient.FeedbackDataServiceClient
 import com.google.android.`as`.oss.feedback.serviceclient.FeedbackDonationData
@@ -142,16 +147,90 @@ constructor(
     _uiStateFlow.update { it.copy(freeFormTextMap = it.freeFormTextMap + (entity to value)) }
   }
 
-  fun updateAllOptInChecked(value: Boolean) {
+  fun updateAdditionalCommentText(entity: FeedbackEntityContent, value: String) {
     _uiStateFlow.update {
-      it.copy(
-        optInChecked = it.optInChecked.filterKeys { key -> key != LegacyV1 }.mapValues { value }
+      it.copy(additionalCommentTextMap = it.additionalCommentTextMap + (entity to value))
+    }
+  }
+
+  fun updateAllDataCollectionOptInStates(value: Boolean) {
+    _uiStateFlow.update { currentState ->
+      currentState.copy(
+        dataCollectionStates =
+          currentState.dataCollectionStates.mapValues { (category, selection) ->
+            if (category != LegacyV1) {
+              selection.withSelection(value)
+            } else {
+              selection
+            }
+          }
       )
     }
   }
 
-  fun updateOptInChecked(category: DataCollectionCategory, value: Boolean) {
-    _uiStateFlow.update { it.copy(optInChecked = it.optInChecked + (category to value)) }
+  /**
+   * Updates the checked state of data collection items.
+   *
+   * - If [item] is provided (not null): Sets the checked state of the specific
+   *   [FeedbackBodyItem.CheckableListItem] and all its recursive children to [isChecked]. This is
+   *   only applicable for categories with [MultiSelection].
+   * - If [item] is null (default): Sets the checked state of the *entire* [DataCollectionCategory]
+   *   to [isChecked]. This applies to all sub-items if the category uses [MultiSelection], and to
+   *   the category itself if it uses [SingleSelection].
+   *
+   * @param category The category to update.
+   * @param item The specific CheckableListItem to update. Defaults to null to update the whole
+   *   category.
+   * @param isChecked The absolute checked state to apply.
+   */
+  fun updateDataCollectionOptInState(
+    category: DataCollectionCategory,
+    isChecked: Boolean,
+    item: FeedbackBodyItem.CheckableListItem? = null,
+  ) {
+    _uiStateFlow.update { currentState ->
+      val selection = currentState.dataCollectionStates[category]
+
+      if (selection == null) {
+        logger.atWarning().log("updateDataCollectionOptInState: Category not found: %s", category)
+        return@update currentState
+      }
+
+      val newSelection =
+        when {
+          item == null -> {
+            // Item is null, so update the entire category state.
+            // This works for both SingleSelection and MultiSelection via the interface method.
+            selection.withSelection(isChecked)
+          }
+          selection is OptInSelection.MultiSelection -> {
+            // Item is non-null and we have a MultiSelection, update specific item/children.
+            val ids = item.getAllDescendantIds()
+            selection.withItemSelections(ids, isChecked)
+          }
+          selection is OptInSelection.SingleSelection -> {
+            // Item is non-null, but the category is SingleSelection. This indicates a mismatch
+            // between the UI sending an item and the category type. Log a warning.
+            logger
+              .atWarning()
+              .log(
+                "updateDataCollectionOptInState: Called with non-null item for category %s which is SingleSelection",
+                category,
+              )
+            selection
+          }
+          else -> {
+            logger
+              .atWarning()
+              .log("updateDataCollectionOptInState: Category not found: %s", category)
+            selection
+          }
+        }
+
+      currentState.copy(
+        dataCollectionStates = currentState.dataCollectionStates + (category to newSelection)
+      )
+    }
   }
 
   fun updateSelectedSentiment(entity: FeedbackEntityContent, sentiment: FeedbackRatingSentiment) {
@@ -177,28 +256,88 @@ constructor(
           }
       )
     }
+
+    if (!value) {
+      clearTagGroundTruthSelection(entity = entity, sentiment = sentiment, tag = tag)
+    }
   }
 
-  fun updateTagGroundTruthSelection(
+  fun toggleTagGroundTruthSelection(
     entity: FeedbackEntityContent,
     sentiment: FeedbackRatingSentiment,
     tag: FeedbackTagData,
-    option: GroundTruthData?,
+    option: GroundTruthData,
   ) {
     _uiStateFlow.update { currentState ->
-      // For this simpler case, the lambda just adds the new key-value pair.
       val oldMap = currentState.tagsGroundTruthSelectionMap
       currentState.copy(
         tagsGroundTruthSelectionMap =
-          oldMap.transformNestedMap(entity, sentiment) { oldOptions ->
-            oldOptions + (tag to option)
+          oldMap.transformNestedMap(entity, sentiment) { oldOptionsSets ->
+            val currentSet = oldOptionsSets[tag] ?: emptySet()
+            val newSet =
+              if (currentSet.contains(option)) {
+                currentSet - option
+              } else {
+                currentSet + option
+              }
+            if (newSet.isEmpty()) {
+              oldOptionsSets - tag
+            } else {
+              oldOptionsSets + (tag to newSet)
+            }
           }
+      )
+    }
+  }
+
+  private fun clearTagGroundTruthSelection(
+    entity: FeedbackEntityContent,
+    sentiment: FeedbackRatingSentiment,
+    tag: FeedbackTagData,
+  ) {
+    _uiStateFlow.update { currentState ->
+      val oldMap = currentState.tagsGroundTruthSelectionMap
+      currentState.copy(
+        tagsGroundTruthSelectionMap =
+          oldMap.transformNestedMap(entity, sentiment) { oldOptionsSets -> oldOptionsSets - tag }
       )
     }
   }
 
   fun updateFeedbackDialogMode(value: FeedbackDialogMode) {
     _uiStateFlow.update { it.copy(feedbackDialogMode = value) }
+  }
+
+  private fun createDataCollectionStates(
+    spoonData: FeedbackDonationData?,
+    quartzData: QuartzFeedbackDonationData?,
+    quartzCuj: QuartzCUJ?,
+  ): Map<DataCollectionCategory, OptInSelection> {
+    val cujName = spoonData?.cuj?.name ?: quartzCuj?.name ?: ""
+    val data = spoonData ?: quartzData
+
+    if (data == null) return emptyMap()
+
+    val defaultOptInCategories =
+      configReader.config.dataCollectionCategoryDefaultOptIn[cujName]?.toSet() ?: emptySet()
+
+    val allCategories: Set<DataCollectionCategory> =
+      if (data is FeedbackDonationData) {
+        data.dataCollectionCategories.keys + SelectedEntityContent
+      } else {
+        data.dataCollectionCategories.keys
+      }
+
+    return allCategories.associateWith { category ->
+      val categoryDataItems = data.dataCollectionCategories[category]?.items ?: emptyList()
+      val checkableItems = extractCheckableItems(categoryDataItems)
+
+      if (checkableItems.isNotEmpty()) {
+        MultiSelection(checkableItems)
+      } else {
+        SingleSelection(category in defaultOptInCategories)
+      }
+    }
   }
 
   /**
@@ -215,56 +354,64 @@ constructor(
   ) {
     loadDonationDataJob?.cancel()
     loadDonationDataJob = viewModelScope.launch {
-      _uiStateFlow.update { it.copy(feedbackDonationData = null) }
+      _uiStateFlow.update {
+        it.copy(
+          feedbackDonationData = null,
+          quartzFeedbackDonationData = null,
+          dataCollectionStates = emptyMap(),
+        )
+      }
 
       var blockViewDataV2ForNotification = false
-      if (loadSpoonData) {
-        val response =
+      val spoonResponse =
+        if (loadSpoonData) {
           feedbackDataServiceClient.getFeedbackDonationData(
             clientSessionId = clientSessionId,
             uiElementType = 0,
             uiElementIndex = 0,
           )
-        _uiStateFlow.update { it.copy(feedbackDonationData = response) }
+        } else {
+          null
+        }
+      val spoonData = spoonResponse?.getOrNull()
+      if (spoonResponse != null) {
+        _uiStateFlow.update { it.copy(feedbackDonationData = spoonResponse) }
         blockViewDataV2ForNotification =
           blockViewDataV2ForNotification or
-            !(response
-              .getOrNull()
+            !(spoonData
               ?.feedbackUiRenderingData
               ?.feedbackViewDataCategoryTitles
               ?.hasTriggeringMessagesTitle() ?: false)
       }
 
-      if (quartzCuj != null) {
-        val quartzResponse =
+      val quartzResponse =
+        if (quartzCuj != null) {
           quartzFeedbackDataServiceClient.getFeedbackDonationData(
             clientSessionId = clientSessionId,
             uiElementType = 0,
             uiElementIndex = 0,
             quartzCuj = quartzCuj,
           )
+        } else {
+          null
+        }
+      val quartzData = quartzResponse?.getOrNull()
+      if (quartzResponse != null) {
         _uiStateFlow.update { it.copy(quartzFeedbackDonationData = quartzResponse) }
         blockViewDataV2ForNotification =
           blockViewDataV2ForNotification or
-            !(quartzResponse
-              .getOrNull()
+            !(quartzData
               ?.feedbackUiRenderingData
               ?.feedbackViewDataCategoryTitles
               ?.hasNotificationContentTitle() ?: false)
-        val defaultOptInChecked = _uiStateFlow.value.optInChecked.toMutableMap()
-        for (category in
-          configReader.config.dataCollectionCategoryDefaultOptIn[quartzCuj.name] ?: emptyList()) {
-          if (
-            (category == LegacyV1 && blockViewDataV2ForNotification) ||
-              (category != LegacyV1 && !blockViewDataV2ForNotification)
-          ) {
-            defaultOptInChecked[category] = true
-          }
-        }
-        _uiStateFlow.update { it.copy(optInChecked = defaultOptInChecked) }
       }
+
+      val dataCollectionStates = createDataCollectionStates(spoonData, quartzData, quartzCuj)
       _uiStateFlow.update {
-        it.copy(enableViewDataDialogV2MultiEntity = !blockViewDataV2ForNotification)
+        it.copy(
+          dataCollectionStates = dataCollectionStates,
+          enableViewDataDialogV2MultiEntity = !blockViewDataV2ForNotification,
+        )
       }
     }
   }
@@ -281,7 +428,7 @@ constructor(
             .atWarning()
             .withCause(e)
             .withStackTrace(StackSize.SMALL)
-            .log("FeedbackViewModel#submitFeedback failed with exception", e)
+            .log("FeedbackViewModel#submitFeedback failed with exception")
           _events.emit(failureEvent())
         }
 
@@ -348,6 +495,24 @@ constructor(
         ?.feedbackDialogSentFailedToast
     )
 
+  private fun getGroundTruthList(
+    submissionData: FeedbackSubmissionData,
+    uiState: FeedbackUiState,
+  ): List<String> {
+    return uiState.tagsGroundTruthSelectionMap[submissionData.selectedEntityContent]
+      ?.get(RATING_SENTIMENT_THUMBS_DOWN)
+      ?.flatMap { (tag, gtSet) -> // Iterate through each tag and its set of ground truths
+        gtSet.map { gt -> // Iterate through each GroundTruthData in the set
+          val formattedGt = formatSingleGroundTruth(gt)
+          "Entity content: ${submissionData.selectedEntityContent}, Rating sentiment: ${tag.ratingTagOrdinal}, Ground truth: $formattedGt"
+        }
+      } ?: emptyList()
+  }
+
+  private fun formatSingleGroundTruth(gt: GroundTruthData): String {
+    return if (gt.sourceApp.isNotEmpty()) "[${gt.sourceApp}] ${gt.label}" else gt.label
+  }
+
   private suspend fun LogFeedbackV2Request.uploadFeedback(): Boolean {
     val request = this
 
@@ -365,10 +530,20 @@ constructor(
     return success
   }
 
+  private fun isCategorySelected(category: DataCollectionCategory): Boolean {
+    val dataCollectionStates = uiStateFlow.value.dataCollectionStates
+    val categorySelected = dataCollectionStates[category]?.isSelected() ?: false
+    val legacySelected = dataCollectionStates[LegacyV1]?.isSelected() ?: false
+    return categorySelected || legacySelected
+  }
+
   private fun FeedbackSubmissionData.toFeedbackUploadRequest(
     data: FeedbackDonationData
   ): LogFeedbackV2Request? {
     val submissionData = this
+    val currentUiState = uiStateFlow.value
+    val dataCollectionStates = currentUiState.dataCollectionStates
+
     return logFeedbackV2Request {
       this.appId = data.appId
       this.interactionId = data.interactionId
@@ -379,64 +554,95 @@ constructor(
           RATING_SENTIMENT_THUMBS_DOWN -> Rating.THUMB_DOWN
           else -> Rating.RATING_UNSPECIFIED
         }
-      uiStateFlow.value.tagsSelectionMap[submissionData.selectedEntityContent]
+      currentUiState.tagsSelectionMap[submissionData.selectedEntityContent]
         ?.get(RATING_SENTIMENT_THUMBS_UP)
         ?.let { entry ->
-          this.positiveTags += entry.keys.map { PositiveRatingTag.entries[it.ratingTagOrdinal] }
+          val tags = entry.filterValues { it }.keys
+          this.positiveTags += tags.map { PositiveRatingTag.entries[it.ratingTagOrdinal] }
         }
-      uiStateFlow.value.tagsSelectionMap[submissionData.selectedEntityContent]
+      currentUiState.tagsSelectionMap[submissionData.selectedEntityContent]
         ?.get(RATING_SENTIMENT_THUMBS_DOWN)
         ?.let { entry ->
-          this.negativeTags += entry.keys.map { NegativeRatingTag.entries[it.ratingTagOrdinal] }
+          val tags = entry.filterValues { it }.keys
+          this.negativeTags += tags.map { NegativeRatingTag.entries[it.ratingTagOrdinal] }
         }
-      additionalComment =
-        uiStateFlow.value.freeFormTextMap[submissionData.selectedEntityContent] ?: ""
+      additionalComment = currentUiState.freeFormTextMap[submissionData.selectedEntityContent] ?: ""
       runtimeConfig = runtimeConfig {
         appBuildType = data.runtimeConfig.appBuildType
         appVersion = data.runtimeConfig.appVersion
         modelMetadata = data.runtimeConfig.modelMetadata
         modelId = data.runtimeConfig.modelId
       }
-      val optInChecked = uiStateFlow.value.optInChecked
+
+      val anyOptedIn = dataCollectionStates.values.any { it.isSelected() }
+
       donationOption =
-        if (optInChecked.any { it.value }) {
-          // The semantic meaning is changed to mean *any* category opt-in.
+        if (anyOptedIn) {
           UserDataDonationOption.OPT_IN
         } else {
           UserDataDonationOption.OPT_OUT
         }
 
-      // Add structured user input section.
       structuredUserInput = structuredUserInput {
         spoonUserInput = spoonUserInput {
-          groundTruthList +=
-            uiStateFlow.value.tagsGroundTruthSelectionMap[submissionData.selectedEntityContent]
-              ?.get(RATING_SENTIMENT_THUMBS_DOWN)
-              ?.mapNotNull {
-                submissionData.selectedEntityContent +
-                  "||" +
-                  it.key.ratingTagOrdinal +
-                  "||" +
-                  it.value?.label
-              }
-              ?.toList() ?: emptyList()
+          groundTruthList += getGroundTruthList(submissionData, currentUiState)
+          optionalSpoonComment =
+            currentUiState.additionalCommentTextMap[submissionData.selectedEntityContent] ?: ""
         }
       }
 
       userDonation = userDonation {
-        // Only include donation data if user has opted in the consent.
-        if (optInChecked.any { it.value }) {
+        if (anyOptedIn) {
           structuredDataDonation = spoonFeedbackDataDonation {
-            if (optInChecked.isAnyTrue(TriggeringMessages, LegacyV1)) {
+            if (isCategorySelected(TriggeringMessages)) {
               triggeringMessages += data.triggeringMessages
             }
-            if (optInChecked.isAnyTrue(IntentQueries, LegacyV1)) {
+            if (isCategorySelected(IntentQueries)) {
               intentQueries += data.intentQueries
             }
-            if (optInChecked.isAnyTrue(ModelOutputs, LegacyV1)) {
+            if (isCategorySelected(ModelOutputs)) {
               modelOutputs += data.modelOutputs
             }
-            if (optInChecked.isAnyTrue(MemoryEntities, LegacyV1)) {
+            if (isCategorySelected(SelectedEntityContent)) {
+              this.selectedEntityContent = submissionData.selectedEntityContent
+            }
+            if (isCategorySelected(FailureReason)) {
+              this.failureReason = data.failureReason
+            }
+
+            val memorySelection = dataCollectionStates[MemoryEntities]
+            if (memorySelection is MultiSelection && memorySelection.isSelected()) {
+              if (data.sourceDocuments.isNotEmpty()) {
+                val donatedSourceDocuments =
+                  data.sourceDocuments.mapIndexedNotNull { index, doc ->
+                    val docId = "${FeedbackDonationData.DOC_ID_PREFIX}$index"
+                    val entityId = "${docId}${FeedbackDonationData.ENTITY_ID_SUFFIX}"
+                    val l0Id = "${docId}${FeedbackDonationData.L0_ID_SUFFIX}"
+
+                    val entityChecked = memorySelection.itemStates[entityId] ?: false
+                    val l0Checked = memorySelection.itemStates[l0Id] ?: false
+
+                    if (entityChecked || l0Checked) {
+                      sourceDocument {
+                        this.l0Title = doc.l0Title
+                        if (entityChecked) {
+                          this.memoryEntity = memoryEntity {
+                            entityData = doc.memoryEntity.entityData
+                            modelVersion = doc.memoryEntity.modelVersion
+                          }
+                        }
+                        if (l0Checked) {
+                          this.l0Content = doc.l0Content
+                        }
+                      }
+                    } else {
+                      null
+                    }
+                  }
+                this.sourceDocuments += donatedSourceDocuments
+              }
+            } else if (isCategorySelected(MemoryEntities)) {
+              // Fallback for SingleSelection or older data structures
               memoryEntities +=
                 data.memoryEntities.map {
                   memoryEntity {
@@ -444,9 +650,6 @@ constructor(
                     modelVersion = it.modelVersion
                   }
                 }
-            }
-            if (optInChecked.isAnyTrue(SelectedEntityContent, LegacyV1)) {
-              this.selectedEntityContent = submissionData.selectedEntityContent
             }
           }
         }
@@ -457,6 +660,12 @@ constructor(
   private fun <T> Map<T, Boolean>.isAnyTrue(vararg keys: T): Boolean {
     return keys.any { this[it] == true }
   }
+
+  private fun FeedbackBodyItem.CheckableListItem.getAllDescendantIds(): List<String> =
+    listOf(this.id) +
+      this.children.filterIsInstance<FeedbackBodyItem.CheckableListItem>().flatMap {
+        it.getAllDescendantIds()
+      }
 
   /**
    * Immutably updates a triply-nested map by applying a transformation at the third level. The
@@ -477,6 +686,16 @@ constructor(
   }
 
   companion object {
+    private fun extractCheckableItems(items: List<FeedbackBodyItem>): Map<String, Boolean> =
+      buildMap {
+        for (item in items) {
+          if (item is FeedbackBodyItem.CheckableListItem) {
+            put(item.id, item.defaultChecked)
+            putAll(extractCheckableItems(item.children))
+          }
+        }
+      }
+
     private val logger = GoogleLogger.forEnclosingClass()
     private const val PACKAGE_NAME = "com.google.android.apps.pixel.psi"
     private const val VERSION_THRESHOLD =
@@ -490,6 +709,9 @@ constructor(
           configReader.config.enableGroundTruthSelectorSingleEntity,
         enableGroundTruthSelectorMultiEntity =
           configReader.config.enableGroundTruthSelectorMultiEntity,
+        enableFineGrainedViewDataDialog = configReader.config.enableFineGrainedViewDataDialog,
+        enableDefaultDonationOptInL1 = configReader.config.enableDefaultDonationOptInL1,
+        enableDefaultDonationOptInL0 = configReader.config.enableDefaultDonationOptInL0,
       )
   }
 }

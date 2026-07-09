@@ -23,6 +23,8 @@ import android.graphics.drawable.Icon
 import android.service.personalcontext.PersonalContextManager
 import android.service.personalcontext.insight.interaction.InsightEvent
 import android.util.Log
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -94,10 +96,10 @@ fun CallWidgetContainer(widget: CallVisualizerWidget) {
           Modifier.background(it)
         }
         .fadeEdge(
-          shouldFadeTop = false,
+          shouldFadeTop = lazyListState.canScrollBackward,
           shouldFadeBottom = lazyListState.canScrollForward,
           color = MaterialTheme.colorScheme.surfaceContainerHighest,
-          height = 48.dp,
+          height = 24.dp,
         ),
   ) {
     // Custom spacing must be used instead of Arrangement.spacedBy because GeneralCards need to have
@@ -252,38 +254,56 @@ private fun <T> Modifier.thenIfNotNull(value: T?, modify: (T) -> Modifier): Modi
  * @param color The color to fade to at the edges.
  * @param height The height of the fading edge.
  */
+@Composable
 private fun Modifier.fadeEdge(
   shouldFadeTop: Boolean,
   shouldFadeBottom: Boolean,
   color: Color,
   height: Dp,
-) = drawWithContent {
-  val heightValue = height.toPx()
-
-  drawContent()
-
-  if (shouldFadeTop) {
-    drawRect(
-      brush =
-        Brush.verticalGradient(
-          colors = listOf(color, color.copy(alpha = 0f)),
-          startY = 0f,
-          endY = heightValue,
-        ),
-      size = Size(this.size.width, heightValue),
+): Modifier {
+  val topFadeFraction by
+    animateFloatAsState(
+      targetValue = if (shouldFadeTop) 1f else 0f,
+      animationSpec = tween(durationMillis = 300),
+      label = "topFade",
     )
-  }
-
-  if (shouldFadeBottom) {
-    drawRect(
-      brush =
-        Brush.verticalGradient(
-          colors = listOf(color.copy(alpha = 0f), color),
-          startY = size.height - heightValue,
-          endY = size.height,
-        ),
-      topLeft = Offset(x = 0f, y = size.height - heightValue),
-      size = Size(this.size.width, heightValue),
+  val bottomFadeFraction by
+    animateFloatAsState(
+      targetValue = if (shouldFadeBottom) 1f else 0f,
+      animationSpec = tween(durationMillis = 300),
+      label = "bottomFade",
     )
+
+  return drawWithContent {
+    val heightValue = height.toPx()
+
+    drawContent()
+
+    if (topFadeFraction > 0f) {
+      val currentHeight = heightValue * topFadeFraction
+      drawRect(
+        brush =
+          Brush.verticalGradient(
+            colors = listOf(color, color.copy(alpha = 0f)),
+            startY = 0f,
+            endY = currentHeight,
+          ),
+        size = Size(this.size.width, currentHeight),
+      )
+    }
+
+    if (bottomFadeFraction > 0f) {
+      val currentHeight = heightValue * bottomFadeFraction
+      drawRect(
+        brush =
+          Brush.verticalGradient(
+            colors = listOf(color.copy(alpha = 0f), color),
+            startY = size.height - currentHeight,
+            endY = size.height,
+          ),
+        topLeft = Offset(x = 0f, y = size.height - currentHeight),
+        size = Size(this.size.width, currentHeight),
+      )
+    }
   }
 }

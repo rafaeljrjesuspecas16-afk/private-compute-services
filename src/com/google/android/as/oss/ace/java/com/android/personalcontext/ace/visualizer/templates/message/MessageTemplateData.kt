@@ -144,6 +144,7 @@ data class ClientActionChip(
   override val contentDescription: String,
   override val icon: Icon?,
   override val insight: ContextInsight,
+  val trailingIcon: Icon? = null,
 ) : MessageChip {
   companion object {
     private const val TAG = "ClientActionChip"
@@ -153,12 +154,14 @@ data class ClientActionChip(
     ): MessageChip? =
       clientActionInsightCompat.ifClientActionInsight(this) { clientActionInsight ->
         val insightDisplayDetails = clientActionInsight.insightDisplayDetails
+        val trailingIcon = clientActionInsight.insightExtendedDetails?.trailingIcon
         ClientActionChip(
           title = insightDisplayDetails.title.toString(),
           subtitle = insightDisplayDetails.subtitle?.toString(),
           contentDescription = insightDisplayDetails.contentDescription.toString(),
           icon = insightDisplayDetails.icon,
           insight = this,
+          trailingIcon = trailingIcon,
         )
       }
         ?: run {

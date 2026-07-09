@@ -44,6 +44,8 @@ message BugleTemplateData {
 
   int32 icon_color = 8;
 
+  int32 chip_background_color = 11;
+
   repeated api.common.DelegatedUiHint hints = 9;
   UiIdToken bugle_view_ui_id_token = 10;
 }

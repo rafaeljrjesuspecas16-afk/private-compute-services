@@ -26,6 +26,7 @@ import com.google.android.as.oss.privateinference.Annotations.PrivateInferenceEn
 import com.google.android.as.oss.privateinference.Annotations.PrivateInferenceEnableAsyncTokenCacheRefill;
 import com.google.android.as.oss.privateinference.Annotations.PrivateInferenceEndpointUrl;
 import com.google.android.as.oss.privateinference.Annotations.PrivateInferenceForceIpTunnelCreationForEverySession;
+import com.google.android.as.oss.privateinference.Annotations.PrivateInferenceUseEndpointSpecificVerificationKeys;
 import com.google.android.as.oss.privateinference.Annotations.PrivateInferenceWaitForGrpcChannelReady;
 import com.google.android.as.oss.privateinference.Annotations.TokenIssuanceEndpointUrl;
 import com.google.android.as.oss.privateinference.config.PrivateInferenceConfig;
@@ -131,5 +132,12 @@ interface PrivateInferenceConfigModule {
   static long providePiServerChannelIdleTimeoutMinutes(
       ConfigReader<PrivateInferenceConfig> configReader) {
     return configReader.getConfig().piServerChannelIdleTimeoutMinutes();
+  }
+
+  @Provides
+  @PrivateInferenceUseEndpointSpecificVerificationKeys
+  static boolean providesUseEndpointSpecificVerificationKeys(
+      ConfigReader<PrivateInferenceConfig> configReader) {
+    return configReader.getConfig().useEndpointSpecificVerificationKeys();
   }
 }

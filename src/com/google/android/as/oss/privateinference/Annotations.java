@@ -28,6 +28,11 @@ public final class Annotations {
   @Retention(RetentionPolicy.RUNTIME)
   public @interface PrivateInferenceEndpointUrl {}
 
+  /** Annotation for whether to use endpoint specific verification keys. */
+  @Qualifier
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface PrivateInferenceUseEndpointSpecificVerificationKeys {}
+
   /** Annotation for whether to wait for the channel to be ready. */
   @Qualifier
   @Retention(RetentionPolicy.RUNTIME)

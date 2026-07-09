@@ -25,9 +25,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.ComposeView
+import androidx.core.content.IntentCompat
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import com.google.android.`as`.oss.dataattribution.DataAttributionApi.EXTRA_ATTRIBUTION_CHIP_DATA_PROTO
 import com.google.android.`as`.oss.dataattribution.DataAttributionApi.EXTRA_ATTRIBUTION_DIALOG_DATA_PROTO
+import com.google.android.`as`.oss.dataattribution.DataAttributionApi.EXTRA_ATTRIBUTION_SETTINGS_INTENT
 import com.google.android.`as`.oss.dataattribution.DataAttributionApi.EXTRA_ATTRIBUTION_SOURCE_DEEP_LINKS
 import com.google.android.`as`.oss.dataattribution.proto.AttributionChipData
 import com.google.android.`as`.oss.dataattribution.proto.AttributionDialogData
@@ -60,12 +62,23 @@ class DataAttributionActivity : Hilt_DataAttributionActivity() {
           EXTRA_ATTRIBUTION_SOURCE_DEEP_LINKS,
           PendingIntent::class.java,
         ) as Array<PendingIntent?>?
+      val settingsIntent =
+        IntentCompat.getParcelableExtra(
+          intent,
+          EXTRA_ATTRIBUTION_SETTINGS_INTENT,
+          PendingIntent::class.java,
+        )
 
       logger
         .atInfo()
-        .log("DataAttributionActivity.onCreate() with sourceDeepLinks: %s.", sourceDeepLinks)
+        .log(
+          "DataAttributionActivity.onCreate() with sourceDeepLinks: %s, settingsIntent: %s.",
+          sourceDeepLinks,
+          settingsIntent,
+        )
 
-      val view = createView(attributionDialogData, attributionChipData, sourceDeepLinks)
+      val view =
+        createView(attributionDialogData, attributionChipData, sourceDeepLinks, settingsIntent)
       showDialog(view)
     } catch (e: Exception) {
       logger
@@ -82,6 +95,7 @@ class DataAttributionActivity : Hilt_DataAttributionActivity() {
     attributionDialogData: AttributionDialogData,
     attributionChipData: AttributionChipData?,
     sourceDeepLinks: Array<PendingIntent?>?,
+    settingsIntent: PendingIntent?,
   ) =
     ComposeView(this).apply {
       setContent {
@@ -92,6 +106,7 @@ class DataAttributionActivity : Hilt_DataAttributionActivity() {
             attributionDialogData = attributionDialogData,
             attributionChipData = attributionChipData,
             sourceDeepLinks = sourceDeepLinks,
+            settingsIntent = settingsIntent,
             onDismissRequest = { finish() },
           )
         }

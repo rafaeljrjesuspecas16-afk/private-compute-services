@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategoryData
+import com.google.android.`as`.oss.feedback.domain.DataCollectionCategoryDataLegacy
 import com.google.android.`as`.oss.feedback.domain.ViewFeedbackData
 import com.google.android.`as`.oss.feedback.domain.fold
 import com.google.android.`as`.oss.feedback.quartz.serviceclient.QuartzFeedbackDonationData
@@ -137,8 +138,14 @@ private data class CombinedFeedbackDataV1(
     listOf(first.viewFeedbackBody, second.viewFeedbackBody).joinToString("\n")
 
   override val dataCollectionCategories: Map<DataCollectionCategory, DataCollectionCategoryData> =
-    first.dataCollectionCategories.mergeWith(second.dataCollectionCategories) { data1, data2 ->
-      DataCollectionCategoryData(
+    emptyMap()
+
+  override val dataCollectionCategoriesLegacy:
+    Map<DataCollectionCategory, DataCollectionCategoryDataLegacy> =
+    first.dataCollectionCategoriesLegacy.mergeWith(second.dataCollectionCategoriesLegacy) {
+      data1,
+      data2 ->
+      DataCollectionCategoryDataLegacy(
         header = data1.header,
         body = listOf(data1.body, data2.body).joinToString("\n"),
       )

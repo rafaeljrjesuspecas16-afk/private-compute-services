@@ -39,6 +39,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.android.personalcontext.ace.common.MetaTags.ACE_EMBEDDED_TAG
 import com.android.personalcontext.ace.common.PrettyPrintUtils.toPrettyPrint
@@ -233,7 +235,14 @@ constructor(
           val insightEventReporter =
             remember(sessionScope) { insightEventReporterFactoryCompat.create(sessionScope) }
 
+          val context = LocalContext.current
+          val configuration = currentInfo.configuration
+          val clientContext =
+            remember(context, configuration) { context.createConfigurationContext(configuration) }
+
           CompositionLocalProvider(
+            LocalContext provides clientContext,
+            LocalConfiguration provides clientContext.resources.configuration,
             LocalSaveableStateRegistry provides saveableStateRegistry,
             LocalInsightSurfaceClientInfo provides currentInfo,
             LocalRenderToken provides renderToken,

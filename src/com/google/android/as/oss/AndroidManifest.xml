@@ -142,6 +142,15 @@
         android:certDigest="133e1925a9b992d327fa1f6c4ba8d57c3b2ebd1f1da4de6b0bfa0bd0411a7ca4"> <!-- Prod -->
       <additional-certificate android:certDigest="8A3A2ABEA3CDE54C7A86B373316FC0B2D3C026CF1BDD73F6E3825C1222A25965" /> <!-- Test -->
     </package>
+
+    <!-- SRSG App -->
+    <package android:name="com.google.android.tts"
+    android:certDigest="7ce83c1b71f3d572fed04c8d40c5cb10ff75e6d87d9df6fbd53f0468c2905053"> <!-- Prod/Release -->
+      <additional-certificate android:certDigest="d22cc500299fb22873a01a010de1c82fbe4d061119b94814dd301dab50cb7678" /> <!-- Test -->
+      <additional-certificate android:certDigest="f0fd6c5b410f25cb25c3b53346c8972fae30f8ee7411df910480ad6b2d60db83" /> <!-- Legacy Prod -->
+      <additional-certificate android:certDigest="1975b2f17177bc89a5dff31f9e64a6cae281a53dc1d1d59b1d147fe1c82afa00" /> <!-- Legacy Test -->
+    </package>
+
   </allow-component-access>
 
 

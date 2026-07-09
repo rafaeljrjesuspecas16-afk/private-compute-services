@@ -25,6 +25,7 @@ android_library(
     srcs = ["PrettyPrintUtils.kt"],
     deps = [
         ":render_token",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/common:labeled_context_insight",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/common/wrappers",
     ],
 )
@@ -47,6 +48,16 @@ android_library(
     name = "packed_color_utils",
     srcs = ["PackedColorUtils.kt"],
     deps = [
+        "//third_party/java/androidx/compose/ui/graphics",
+    ],
+)
+
+android_library(
+    name = "modifier_utils",
+    srcs = ["ModifierUtils.kt"],
+    deps = [
+        "//third_party/java/androidx/compose/ui",
+        "//third_party/java/androidx/compose/ui/geometry",
         "//third_party/java/androidx/compose/ui/graphics",
     ],
 )
@@ -105,4 +116,30 @@ android_library(
         "MetaTags.kt",
     ],
     deps = [],
+)
+
+android_library(
+    name = "labeled_context_insight",
+    srcs = [
+        "LabeledContextInsight.kt",
+    ],
+    deps = [],
+)
+
+android_library(
+    name = "client_action_parameters",
+    srcs = ["ClientActionParameters.kt"],
+)
+
+android_library(
+    name = "displayable_context_insight",
+    srcs = [
+        "DisplayableContextInsight.kt",
+    ],
+    deps = [],
+)
+
+android_library(
+    name = "insight_extended_details",
+    srcs = ["InsightExtendedDetails.kt"],
 )

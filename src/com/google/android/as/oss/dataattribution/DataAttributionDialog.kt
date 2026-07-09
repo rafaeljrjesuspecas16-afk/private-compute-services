@@ -20,6 +20,8 @@ package com.google.android.`as`.oss.dataattribution
 
 import android.app.ActivityOptions
 import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -91,6 +93,7 @@ internal fun DataAttributionDialog(
   attributionDialogData: AttributionDialogData,
   attributionChipData: AttributionChipData?,
   sourceDeepLinks: Array<PendingIntent?>?,
+  settingsIntent: PendingIntent?,
   onDismissRequest: () -> Unit,
 ) {
   val uiState by viewModel.uiState.collectAsState()
@@ -126,6 +129,7 @@ internal fun DataAttributionDialog(
         data = attributionDialogData,
         feedbackSessionId = attributionDialogData.sessionId,
         feedbackEntityContent = attributionChipData?.chipLabel,
+        settingsIntent = settingsIntent,
         logUiEvent = logUiEvent,
         onDismissRequest = onDismissRequest,
       )
@@ -284,7 +288,7 @@ fun AttributionCard(
     modifier =
       Modifier.fillMaxWidth()
         .clip(RoundedCornerShape(20.dp))
-        .clickable(pendingIntent = deepLink) {
+        .clickable(action = deepLink?.let { PendingIntentAction(it) }) {
           logUiEvent(
             DataAttributionUiElementType.ATTRIBUTION_CLICKABLE_ITEM.id,
             InteractionType.INTERACTION_TYPE_CLICK,
@@ -342,6 +346,7 @@ internal fun DataAttributionDialogFooter(
   data: AttributionDialogData,
   feedbackSessionId: String,
   feedbackEntityContent: String?,
+  settingsIntent: PendingIntent?,
   logUiEvent: (Int, InteractionType) -> Unit,
   onDismissRequest: () -> Unit,
 ) {
@@ -353,20 +358,24 @@ internal fun DataAttributionDialogFooter(
     horizontalArrangement = Arrangement.SpaceBetween,
   ) {
     // Settings
-    if (uiState.settingsIntent != null) {
+    val settingsAction =
+      when {
+        settingsIntent != null -> PendingIntentAction(settingsIntent)
+        uiState.settingsIntentLegacy != null -> ActivityIntentAction(uiState.settingsIntentLegacy)
+        else -> null
+      }
+
+    if (settingsAction != null) {
       Row(
         modifier =
           Modifier.clip(shape = RoundedCornerShape(percent = 100))
-            .clickable(
-              onClick = {
-                logUiEvent(
-                  DataAttributionUiElementType.ATTRIBUTION_SETTINGS_BUTTON.id,
-                  InteractionType.INTERACTION_TYPE_CLICK,
-                )
-                context.startActivity(uiState.settingsIntent)
-                onDismissRequest()
-              }
-            )
+            .clickable(action = settingsAction) {
+              logUiEvent(
+                DataAttributionUiElementType.ATTRIBUTION_SETTINGS_BUTTON.id,
+                InteractionType.INTERACTION_TYPE_CLICK,
+              )
+              onDismissRequest()
+            }
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -491,24 +500,59 @@ fun MainTheme(
   MaterialTheme(colorScheme = colorScheme, typography = Typography().withFlexFont()) { content() }
 }
 
-@Composable
-private fun Modifier.clickable(pendingIntent: PendingIntent?, onClick: () -> Unit): Modifier {
-  return if (pendingIntent == null) {
-    this
-  } else {
-    this.clickable {
+/**
+ * Represents an action that launches an activity, abstracting away the difference between standard
+ * [Intent]s and [PendingIntent]s.
+ */
+private sealed interface IntentAction {
+  /** Executes the action to launch the activity using the provided [context]. */
+  fun execute(context: Context)
+}
+
+/** An [IntentAction] that launches a standard [Intent] using [Context.startActivity]. */
+private data class ActivityIntentAction(val intent: Intent) : IntentAction {
+  override fun execute(context: Context) {
+    context.startActivity(intent)
+  }
+}
+
+/** An [IntentAction] that launches a [PendingIntent] with background activity start options. */
+private data class PendingIntentAction(val pendingIntent: PendingIntent) : IntentAction {
+  override fun execute(context: Context) {
+
+    try {
       pendingIntent.send(
         ActivityOptions.makeBasic()
           .apply {
             if (balAdditionalStartModes()) {
               setPendingIntentBackgroundActivityStartMode(
-                // TODO: Update to MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE
                 ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
               )
             }
           }
           .toBundle()
       )
+    } catch (e: PendingIntent.CanceledException) {
+      logger.atWarning().withCause(e).log("Tried executing a canceled PendingIntent.")
+    }
+  }
+}
+
+/**
+ * A custom [Modifier] that makes an element clickable and executes the provided [IntentAction] when
+ * clicked, before invoking [onClick].
+ *
+ * @param action The [IntentAction] to execute on click. If null, the element is not clickable.
+ * @param onClick Callback triggered after the [action] is executed.
+ */
+@Composable
+private fun Modifier.clickable(action: IntentAction?, onClick: () -> Unit): Modifier {
+  val context = LocalContext.current
+  return if (action == null) {
+    this
+  } else {
+    this.clickable {
+      action.execute(context)
       onClick()
     }
   }

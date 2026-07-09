@@ -32,7 +32,7 @@ import com.android.personalcontext.ace.client.prototype.PrototypeInsightId.Rende
  */
 data class RenderTokenInsight(
   val renderToken: RenderToken,
-  override val originHints: Set<PublishedContextHint> = emptySet(),
+  override val originHints: Collection<PublishedContextHint> = emptySet(),
 ) : PrototypeContextInsight(RenderTokenInsightId, this) {
 
   override fun exportDataToBundle(bundle: Bundle) {

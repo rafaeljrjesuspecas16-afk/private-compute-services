@@ -19,6 +19,7 @@ package com.android.personalcontext.ace.visualizer.compat
 import android.service.personalcontext.hint.ContextHint
 import android.service.personalcontext.insight.ContextInsight
 import android.service.personalcontext.insight.InsightCollection
+import com.android.personalcontext.ace.common.LabeledContextInsight
 
 interface PrototypeTransformCompat {
 
@@ -32,5 +33,5 @@ interface PrototypeTransformCompat {
    * Transforms the [InsightCollection] into a prototype instance, if possible, and return its
    * [ContextInsight] children.
    */
-  fun transformChildren(insight: InsightCollection): List<ContextInsight>? = null
+  fun transformChildren(insight: ContextInsight): List<LabeledContextInsight>? = null
 }

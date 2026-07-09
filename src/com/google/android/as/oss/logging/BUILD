@@ -32,6 +32,12 @@ kt_jvm_lite_proto_library(
     deps = [":enums_proto"],
 )
 
+android_library(
+    name = "psi_enums_kt_proto_lite",
+    exports = [
+    ],
+)
+
 proto_library(
     name = "atoms_proto",
     srcs = [

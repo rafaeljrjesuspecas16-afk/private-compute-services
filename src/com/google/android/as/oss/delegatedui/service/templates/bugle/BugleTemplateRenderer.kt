@@ -250,6 +250,12 @@ internal constructor(val configReader: ConfigReader<DelegatedUiConfig>) : Templa
                       data.enableSizeAnimation || !data.hasEnableSizeAnimation(),
                     suggestionChipRowData = suggestionChipRowData,
                     actionChipRowData = actionChipRowData,
+                    chipBackgroundColor =
+                      if (data.chipBackgroundColor != 0) {
+                        Color(data.chipBackgroundColor)
+                      } else {
+                        Color.Transparent
+                      },
                   )
                 }
               }
@@ -299,11 +305,17 @@ internal fun TemplateRendererScope.BugleChipsRow(
   enableSizeAnimation: Boolean,
   suggestionChipRowData: SuggestionChipRowData?,
   actionChipRowData: ActionChipRowData?,
+  chipBackgroundColor: Color = Color.Transparent,
 ) {
   if (isStandaloneRowEnabled) {
-    StandaloneChipsRow(suggestionChipRowData, actionChipRowData)
+    StandaloneChipsRow(suggestionChipRowData, actionChipRowData, chipBackgroundColor)
   } else {
-    AnimatedMergedChipsRow(enableSizeAnimation, suggestionChipRowData, actionChipRowData)
+    AnimatedMergedChipsRow(
+      enableSizeAnimation,
+      suggestionChipRowData,
+      actionChipRowData,
+      chipBackgroundColor,
+    )
   }
 }
 
@@ -311,6 +323,7 @@ internal fun TemplateRendererScope.BugleChipsRow(
 private fun TemplateRendererScope.StandaloneChipsRow(
   suggestionChipRowData: SuggestionChipRowData?,
   actionChipRowData: ActionChipRowData?,
+  chipBackgroundColor: Color,
 ) {
   LazyRow(
     modifier =
@@ -322,12 +335,16 @@ private fun TemplateRendererScope.StandaloneChipsRow(
   ) {
     if (suggestionChipRowData != null) {
       itemsIndexed(suggestionChipRowData.bugleSuggestionModelList) { index, suggestion ->
-        BugleSuggestionChip(suggestionChipRowData.logoIcon, suggestion)
+        BugleSuggestionChip(suggestionChipRowData.logoIcon, suggestion, chipBackgroundColor)
       }
     }
     if (actionChipRowData != null) {
       itemsIndexed(actionChipRowData.bugleActionsList) { index, action ->
-        BugleActionChip(action, remoteAction = actionChipRowData.remoteActionsList[index])
+        BugleActionChip(
+          action,
+          remoteAction = actionChipRowData.remoteActionsList[index],
+          chipBackgroundColor,
+        )
       }
     }
   }
@@ -338,6 +355,7 @@ private fun TemplateRendererScope.AnimatedMergedChipsRow(
   enableSizeAnimation: Boolean,
   suggestionChipRowData: SuggestionChipRowData?,
   actionChipRowData: ActionChipRowData?,
+  chipBackgroundColor: Color,
 ) {
   if (enableSizeAnimation) {
     var showContent by rememberSaveable { mutableStateOf(false) }
@@ -358,6 +376,7 @@ private fun TemplateRendererScope.AnimatedMergedChipsRow(
         Modifier.testTag(ANIMATED_MERGED_CHIPS_ROW_ENABLE_SIZE_ANIMATION),
         suggestionChipRowData,
         actionChipRowData,
+        chipBackgroundColor,
       )
     }
   } else {
@@ -365,6 +384,7 @@ private fun TemplateRendererScope.AnimatedMergedChipsRow(
       Modifier.testTag(ANIMATED_MERGED_CHIPS_ROW_DISABLE_SIZE_ANIMATION),
       suggestionChipRowData,
       actionChipRowData,
+      chipBackgroundColor,
     )
   }
 }
@@ -374,6 +394,7 @@ private fun TemplateRendererScope.MergedChipsRow(
   modifier: Modifier,
   suggestionChipRowData: SuggestionChipRowData?,
   actionChipRowData: ActionChipRowData?,
+  chipBackgroundColor: Color,
 ) {
   Row(
     modifier = modifier.wrapContentWidth().heightIn(48.dp).padding(vertical = 4.dp),
@@ -395,7 +416,7 @@ private fun TemplateRendererScope.MergedChipsRow(
           )
         },
       ) { suggestion ->
-        BugleSuggestionChip(suggestionChipRowData.logoIcon, suggestion)
+        BugleSuggestionChip(suggestionChipRowData.logoIcon, suggestion, chipBackgroundColor)
       }
     }
     if (actionChipRowData != null) {
@@ -412,7 +433,11 @@ private fun TemplateRendererScope.MergedChipsRow(
           )
         },
       ) { (magicAction, remoteAction) ->
-        BugleActionChip(bugleAction = magicAction, remoteAction = remoteAction)
+        BugleActionChip(
+          bugleAction = magicAction,
+          remoteAction = remoteAction,
+          chipBackgroundColor = chipBackgroundColor,
+        )
       }
     }
   }
@@ -425,10 +450,12 @@ private fun onlyIf(condition: Boolean, action: () -> Unit): (() -> Unit)? =
 internal fun TemplateRendererScope.BugleSuggestionChip(
   logoIcon: Bitmap?,
   suggestionModel: BugleSuggestionModel,
+  chipBackgroundColor: Color = Color.Transparent,
 ) {
   val suggestion = suggestionModel.suggestion
   val scope = rememberCoroutineScope()
   BugleOutlinedButton(
+    chipBackgroundColor = chipBackgroundColor,
     modifier = Modifier.testTag(BUGLE_SUGGESTIONS_CHIPS_TEST_TAG),
     chipOnClick = {
       scope.launch {
@@ -468,11 +495,16 @@ internal fun TemplateRendererScope.BugleSuggestionChip(
 }
 
 @Composable
-fun TemplateRendererScope.BugleActionChip(bugleAction: BugleAction, remoteAction: RemoteAction) {
+fun TemplateRendererScope.BugleActionChip(
+  bugleAction: BugleAction,
+  remoteAction: RemoteAction,
+  chipBackgroundColor: Color = Color.Transparent,
+) {
   val iconBitmap = remoteAction.iconBitmap
 
   val scope = rememberCoroutineScope()
   BugleOutlinedButton(
+    chipBackgroundColor = chipBackgroundColor,
     modifier = Modifier.testTag(BUGLE_ACTIONS_CHIPS_TEST_TAG),
     chipOnClick = {
       scope.launch {
@@ -549,6 +581,7 @@ fun MainTheme(content: @Composable () -> Unit) {
 
 @Composable
 private fun BugleOutlinedButton(
+  chipBackgroundColor: Color,
   modifier: Modifier,
   chipOnClick: () -> Unit,
   chipOnLongClick: (() -> Unit)? = null,
@@ -563,7 +596,7 @@ private fun BugleOutlinedButton(
         .clip(shape)
         .widthIn(min = 30.dp, max = 320.dp)
         .heightIn(min = 40.dp)
-        .background(color = Color.Transparent, shape = shape)
+        .background(color = chipBackgroundColor)
         .combinedClickable(
           onClick = chipOnClick,
           onLongClick = chipOnLongClick,

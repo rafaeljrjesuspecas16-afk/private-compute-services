@@ -22,7 +22,7 @@ import com.android.personalcontext.ace.client.prototype.PrototypeContextInsight
 import com.android.personalcontext.ace.client.prototype.PrototypeInsightId.EmptyRenderInsightId
 
 /** An empty insight for hints with [PublishedContextHint.getRenderTokens]. */
-data class EmptyRenderInsight(override val originHints: Set<PublishedContextHint>) :
+data class EmptyRenderInsight(override val originHints: Collection<PublishedContextHint>) :
   PrototypeContextInsight(EmptyRenderInsightId, this) {
 
   override fun exportDataToBundle(bundle: Bundle) {
@@ -35,9 +35,6 @@ data class EmptyRenderInsight(override val originHints: Set<PublishedContextHint
       EmptyRenderInsight(originHints)
   }
 }
-
-/** [EmptyRenderInsight] builder function. */
-fun EmptyRenderInsight(hints: Collection<PublishedContextHint>) = EmptyRenderInsight(hints.toSet())
 
 /** [EmptyRenderInsight] builder function. */
 fun EmptyRenderInsight(vararg hints: PublishedContextHint) = EmptyRenderInsight(hints.toSet())

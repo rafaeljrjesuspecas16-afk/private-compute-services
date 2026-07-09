@@ -28,6 +28,7 @@ android_library(
         "//src/com/google/android/as/oss/common/flavor",
         "//src/com/google/android/as/oss/feedback/domain:view_feedback_data",
         "//src/com/google/android/as/oss/feedback/proto/gateway:quartz_log_kt_proto_lite",
+        "//src/com/google/android/as/oss/feedback/proto/gateway:spoon_kt_proto_lite",
         "//third_party/java/android/android_sdk_linux/extras/android/compatibility/v4",
     ],
 )

@@ -147,6 +147,7 @@ enum PcsPrivateInferenceFeatureName {
 
   // Device Intelligence feature names (100-199)
   FEATURE_NAME_PSI_MEMORY_GENERATION = 100;
+  FEATURE_NAME_PSI_MEMORY_GENERATION_CFA_INSIGHTS = 104;
 
   // Recorder feature names (300-399)
   FEATURE_NAME_RECORDER_TRANSCRIPT_SUMMARIZATION = 300;

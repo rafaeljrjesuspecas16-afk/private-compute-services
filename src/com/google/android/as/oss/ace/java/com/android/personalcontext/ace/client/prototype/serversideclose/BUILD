@@ -29,3 +29,15 @@ android_library(
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype:prototype_insight",
     ],
 )
+
+android_library(
+    name = "ext",
+    srcs = [
+        "ServerSideCloseInsightExt.kt",
+    ],
+    deps = [
+        ":serversideclose",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype:prototype_utils",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/common:displayable_context_insight",
+    ],
+)

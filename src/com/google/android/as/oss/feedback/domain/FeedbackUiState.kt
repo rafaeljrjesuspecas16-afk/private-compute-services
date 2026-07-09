@@ -18,15 +18,6 @@ package com.google.android.`as`.oss.feedback.domain
 
 import com.google.android.`as`.oss.feedback.api.FeedbackRatingSentiment
 import com.google.android.`as`.oss.feedback.api.FeedbackTagData
-import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.AppInfo
-import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.IntentQueries
-import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.LegacyV1
-import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.MemoryEntities
-import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.ModelOutputs
-import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.NotificationContent
-import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.QuartzModelOutputs
-import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.SelectedEntityContent
-import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.TriggeringMessages
 import com.google.android.`as`.oss.feedback.quartz.serviceclient.QuartzFeedbackDonationData
 import com.google.android.`as`.oss.feedback.serviceclient.FeedbackDonationData
 import java.util.Collections.emptyMap
@@ -40,22 +31,11 @@ data class FeedbackUiState(
   val tagsGroundTruthSelectionMap:
     Map<
       FeedbackEntityContent,
-      Map<FeedbackRatingSentiment, Map<FeedbackTagData, GroundTruthData?>>,
+      Map<FeedbackRatingSentiment, Map<FeedbackTagData, Set<GroundTruthData>>>,
     > =
     emptyMap(),
   val freeFormTextMap: Map<FeedbackEntityContent, String> = emptyMap(),
-  val optInChecked: Map<DataCollectionCategory, Boolean> =
-    mapOf(
-      LegacyV1 to false,
-      NotificationContent to false,
-      TriggeringMessages to false,
-      IntentQueries to false,
-      ModelOutputs to false,
-      QuartzModelOutputs to false,
-      MemoryEntities to false,
-      SelectedEntityContent to false,
-      AppInfo to false,
-    ),
+  val additionalCommentTextMap: Map<FeedbackEntityContent, String> = emptyMap(),
   val feedbackDialogMode: FeedbackDialogMode = FeedbackDialogMode.EDITING_FEEDBACK,
   val feedbackSubmitStatus: FeedbackSubmitState = FeedbackSubmitState.DRAFT,
   val feedbackDonationData: Result<FeedbackDonationData>? = null,
@@ -67,7 +47,54 @@ data class FeedbackUiState(
   val enableGroundTruthSelectorSingleEntity: Boolean = false,
   val enableGroundTruthSelectorMultiEntity: Boolean = false,
   val enableOptInUiV2: Boolean = false,
+  val enableFineGrainedViewDataDialog: Boolean = false,
+  val enableDefaultDonationOptInL1: Boolean = false,
+  val enableDefaultDonationOptInL0: Boolean = false,
+
+  /**
+   * Stores the opt-in selection state for each [DataCollectionCategory].
+   *
+   * The values [OptInSelection] can be either:
+   * - [OptInSelection.SingleSelection]: For categories with a single boolean opt-in.
+   * - [OptInSelection.MultiSelection]: For categories with hierarchical, checkable items, where the
+   *   selection state of individual items (keyed by their unique IDs) is managed internally.
+   */
+  val dataCollectionStates: Map<DataCollectionCategory, OptInSelection> = emptyMap(),
 )
+
+/** Sealed interface to represent the selection state for a data collection category. */
+sealed interface OptInSelection {
+  /** Checks if any part of the selection is positive. */
+  fun isSelected(): Boolean
+
+  /** Returns a new instance with the overall selection set to [selected]. */
+  fun withSelection(selected: Boolean): OptInSelection
+
+  /** Represents a category with a single boolean opt-in state. */
+  data class SingleSelection(val selected: Boolean) : OptInSelection {
+    override fun isSelected(): Boolean = selected
+
+    override fun withSelection(selected: Boolean): SingleSelection = this.copy(selected = selected)
+  }
+
+  /** Represents a category with multiple checkable sub-items. */
+  data class MultiSelection(val itemStates: Map<String, Boolean>) : OptInSelection {
+    override fun isSelected(): Boolean = itemStates.values.any { it }
+
+    override fun withSelection(selected: Boolean): MultiSelection =
+      this.copy(itemStates = itemStates.mapValues { selected })
+
+    /** Returns a new MultiSelection with selection state of [ids] set to [selected]. */
+    fun withItemSelections(ids: Collection<String>, selected: Boolean): MultiSelection =
+      this.copy(itemStates = itemStates + ids.associateWith { selected })
+
+    val allSelected: Boolean
+      get() = itemStates.keys.isNotEmpty() && itemStates.values.all { it }
+
+    val isIndeterminate: Boolean
+      get() = isSelected() && !allSelected
+  }
+}
 
 /** The modes that a feedback dialog can be in. */
 enum class FeedbackDialogMode {

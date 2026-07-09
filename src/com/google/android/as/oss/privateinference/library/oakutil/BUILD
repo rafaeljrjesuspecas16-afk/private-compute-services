@@ -53,6 +53,14 @@ filegroup(
 )
 
 filegroup(
+    name = "public_keys_nonprod_proto",
+    srcs = ["res/raw/public_keys_nonprod_proto.binarypb"],
+    visibility = [
+        "//visibility:public",
+    ],
+)
+
+filegroup(
     name = "public_keys_labs_proto",
     srcs = ["res/raw/public_keys_labs_proto.binarypb"],
     visibility = [

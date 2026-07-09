@@ -23,6 +23,7 @@ package(
 android_library(
     name = "richcard",
     srcs = [
+        "RichCardErrorHint.kt",
         "RichCardHint.kt",
         "RichCardLiveDataHint.kt",
     ],

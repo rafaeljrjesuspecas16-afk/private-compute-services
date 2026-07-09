@@ -91,19 +91,34 @@ object PrettyPrintUtils {
    * Postfix with "*" if the insight is [transform]ed.
    *
    * @param maxDepth The number of nested collection levels to expand before truncating.
+   * @param formatting If true, formats the output with newlines and indentation.
    */
   fun ContextInsight.toPrettyPrint(
     maxDepth: Int = 1,
+    formatting: Boolean = false,
     transform: (ContextInsight) -> String? = { null },
-    children: (InsightCollection) -> List<ContextInsight>? = { it.insights },
+    children: (ContextInsight) -> List<LabeledContextInsight>? = {
+      (it as? InsightCollection)?.insights?.withIndexLabels()
+    },
   ): String {
-    return buildString { toPrettyPrintInternal(maxDepth, transform, children, this) }
+    return buildString {
+      toPrettyPrintInternal(
+        depth = 0,
+        maxDepth = maxDepth,
+        formatting = formatting,
+        transform = transform,
+        children = children,
+        builder = this,
+      )
+    }
   }
 
   private fun ContextInsight.toPrettyPrintInternal(
+    depth: Int,
     maxDepth: Int,
+    formatting: Boolean,
     transform: (ContextInsight) -> String?,
-    children: (InsightCollection) -> List<ContextInsight>?,
+    children: (ContextInsight) -> List<LabeledContextInsight>?,
     builder: StringBuilder,
   ) {
     val insight = this
@@ -115,23 +130,50 @@ object PrettyPrintUtils {
     builder.append(name)
     builder.append(postfix)
 
-    if (insight is InsightCollection) {
-      val transformedChildren = children(insight) ?: insight.insights
+    val transformedChildren =
+      children(insight)
+        ?: (insight as? InsightCollection)?.insights?.withIndexLabels()
+        ?: emptyList()
+    if (transformedChildren.isNotEmpty()) {
+      builder.append("[")
+      if (maxDepth <= 0) {
+        builder.append("...")
+      } else {
+        if (formatting) builder.append("\n")
 
-      if (transformedChildren.isNotEmpty()) {
-        builder.append("[")
-        if (maxDepth <= 0) {
-          builder.append("...")
-        } else {
-          for ((index, child) in transformedChildren.withIndex()) {
-            child.toPrettyPrintInternal(maxDepth - 1, transform, children, builder)
-            if (index < transformedChildren.size - 1) {
-              builder.append(", ")
-            }
+        for ((index, child) in transformedChildren.withIndex()) {
+          if (formatting) {
+            builder.append("  ".repeat(depth + 1))
+          }
+          builder.append("${child.label}: ")
+
+          val childInsight = child.insight
+          if (childInsight == null) {
+            builder.append("<null>")
+          } else {
+            childInsight.toPrettyPrintInternal(
+              depth = depth + 1,
+              maxDepth = maxDepth - 1,
+              formatting = formatting,
+              transform = transform,
+              children = children,
+              builder = builder,
+            )
+          }
+
+          if (index < transformedChildren.size - 1) {
+            builder.append(",")
+            if (formatting) builder.append("\n") else builder.append(" ")
+          } else {
+            if (formatting) builder.append("\n")
           }
         }
-        builder.append("]")
+
+        if (formatting) {
+          builder.append("  ".repeat(depth))
+        }
       }
+      builder.append("]")
     }
   }
 }

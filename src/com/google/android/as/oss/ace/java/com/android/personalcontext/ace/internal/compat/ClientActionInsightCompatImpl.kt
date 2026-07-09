@@ -16,11 +16,12 @@
 
 package com.android.personalcontext.ace.internal.compat
 
-import android.os.Parcelable
 import android.service.personalcontext.insight.ContextInsight
 import android.service.personalcontext.insight.InsightDisplayDetails
 import com.android.personalcontext.ace.client.prototype.PrototypeInsightUtils.toPrototypeInsight
 import com.android.personalcontext.ace.client.prototype.clientaction.ClientActionInsight
+import com.android.personalcontext.ace.client.prototype.clientaction.params.ClientActionParams
+import com.android.personalcontext.ace.common.InsightExtendedDetails
 import com.android.personalcontext.ace.visualizer.compat.ClientActionInsightCompat
 import com.android.personalcontext.ace.visualizer.compat.ClientActionInsightCompat.SafeClientActionInsight
 import javax.inject.Inject
@@ -38,11 +39,14 @@ class ClientActionInsightCompatImpl @Inject constructor() : ClientActionInsightC
       clientActionInsight: ClientActionInsight ->
       block(
         object : SafeClientActionInsight {
-          override val clientActionParams: Parcelable
+          override val clientActionParams: ClientActionParams
             get() = clientActionInsight.clientActionParams
 
           override val insightDisplayDetails: InsightDisplayDetails
             get() = clientActionInsight.insightDisplayDetails
+
+          override val insightExtendedDetails: InsightExtendedDetails?
+            get() = clientActionInsight.insightExtendedDetails
         }
       )
     }

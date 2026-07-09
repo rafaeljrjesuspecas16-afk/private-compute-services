@@ -258,7 +258,7 @@ private fun MultiFeedbackBottomSheet(
             selectedSentimentMap = uiState.selectedSentimentMap,
             tagsSelectionMap = uiState.tagsSelectionMap,
             freeFormTextMap = uiState.freeFormTextMap,
-            optInChecked = uiState.optInChecked.any { it.value },
+            optInChecked = uiState.dataCollectionStates.values.any { it.isSelected() },
             onSelectedSentimentChanged = { feedbackEntityContent, feedbackRatingSentiment ->
               viewModel.logUiEvent(
                 uiElementType = FeedbackUiElementType.FEEDBACK_THUMBS_UP_BUTTON.id,
@@ -292,9 +292,9 @@ private fun MultiFeedbackBottomSheet(
                   },
               )
               if (uiState.enableViewDataDialogV2MultiEntity) {
-                viewModel.updateAllOptInChecked(checked)
+                viewModel.updateAllDataCollectionOptInStates(checked)
               } else {
-                viewModel.updateOptInChecked(LegacyV1, checked)
+                viewModel.updateDataCollectionOptInState(LegacyV1, checked)
               }
             },
             onTagsShown = { tags ->
@@ -331,7 +331,7 @@ private fun MultiFeedbackBottomSheet(
                   interactionType = InteractionType.INTERACTION_TYPE_VIEW,
                 )
               },
-              onViewDataSectionCheckedChange = viewModel::updateOptInChecked,
+              onViewDataSectionCheckedChange = viewModel::updateDataCollectionOptInState,
               onViewDataSectionExpanded = {},
               onBackPressed = { viewModel.updateFeedbackDialogMode(EDITING_FEEDBACK) },
               onDismissRequest = onDismissRequest,

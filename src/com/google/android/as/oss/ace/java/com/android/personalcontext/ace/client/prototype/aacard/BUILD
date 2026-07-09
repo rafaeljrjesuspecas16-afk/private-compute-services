@@ -23,7 +23,7 @@ package(
 android_library(
     name = "aacard",
     srcs = [
-        "AACardHint.kt",
+        "AaCardMetadataHint.kt",
     ],
     deps = [
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype:prototype_hint",

@@ -20,6 +20,7 @@ package com.google.android.`as`.oss.feedback.domain
 interface ViewFeedbackData {
   val viewFeedbackHeader: String?
   val viewFeedbackBody: String
+  val dataCollectionCategoriesLegacy: Map<DataCollectionCategory, DataCollectionCategoryDataLegacy>
   val dataCollectionCategories: Map<DataCollectionCategory, DataCollectionCategoryData>
   val dataCollectionCategoryExpandContentDescription: String
   val dataCollectionCategoryCollapseContentDescription: String
@@ -37,6 +38,45 @@ enum class DataCollectionCategory {
   MemoryEntities,
   SelectedEntityContent,
   AppInfo,
+  FailureReason,
 }
 
-data class DataCollectionCategoryData(val header: String, val body: String)
+data class DataCollectionCategoryDataLegacy(val header: String, val body: String)
+
+/**
+ * Data collection category data with multiple entries that will be displayed in the view feedback
+ * data dialog.
+ *
+ * @param header The header of the data collection category.
+ * @param items A list of [FeedbackBodyItem] to be displayed.
+ */
+data class DataCollectionCategoryData(
+  val header: String,
+  val items: List<FeedbackBodyItem> = emptyList(),
+)
+
+/** Sealed interface for different types of items in the feedback body. */
+sealed interface FeedbackBodyItem {
+  val id: String // Unique ID for state management
+
+  /** Represents a simple, non-interactive block of text. */
+  data class SimpleText(override val id: String, val text: String) : FeedbackBodyItem
+
+  /**
+   * Represents an item with a title, a checkbox, and potentially expandable child items. The
+   * checkbox for this item controls the inclusion of its entire content, including children, in the
+   * feedback report.
+   */
+  data class CheckableListItem(
+    override val id: String,
+    val title: String,
+    val defaultChecked: Boolean = false,
+    val children: List<FeedbackBodyItem> = emptyList(),
+  ) : FeedbackBodyItem
+
+  /**
+   * Represents a block of text content within a CheckableListItem. This item does not have its own
+   * checkbox; its inclusion is governed by the parent CheckableListItem.
+   */
+  data class ChildText(override val id: String, val text: String) : FeedbackBodyItem
+}

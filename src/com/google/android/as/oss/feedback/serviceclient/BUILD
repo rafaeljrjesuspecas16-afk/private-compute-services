@@ -24,11 +24,31 @@ android_library(
         "FeedbackDataServiceClientModule.kt",
     ],
     deps = [
+        "//src/com/google/android/as/oss/common/config",
+        "//src/com/google/android/as/oss/feedback/config",
         "//src/com/google/android/as/oss/feedback/domain:view_feedback_data",
         "//src/com/google/android/as/oss/feedback/proto/dataservice:data_service_kt_grpc",
         "//src/com/google/android/as/oss/feedback/proto/dataservice:data_service_kt_proto_lite",
         "//src/com/google/android/as/oss/feedback/proto/gateway:quartz_log_kt_proto_lite",
         "//src/com/google/android/as/oss/feedback/proto/gateway:spoon_kt_proto_lite",
+        "@maven//:com_google_dagger_dagger",
+        "@maven//:com_google_dagger_hilt-android",
+        "@maven//:com_google_flogger_google_extensions",
+        "@maven//:javax_inject_javax_inject",
+    ],
+)
+
+android_library(
+    name = "internal_service_client",
+    srcs = [
+        "InternalFeedbackDataServiceClient.kt",
+        "InternalFeedbackDataServiceClientImpl.kt",
+        "InternalFeedbackDataServiceClientModule.kt",
+    ],
+    deps = [
+        "//src/com/google/android/as/oss/common",
+        "//src/com/google/android/as/oss/feedback/proto/dataservice:internal_data_service_kt_grpc",
+        "//src/com/google/android/as/oss/feedback/proto/dataservice:internal_feedback_data_kt_proto_lite",
         "@maven//:com_google_dagger_dagger",
         "@maven//:com_google_dagger_hilt-android",
         "@maven//:com_google_flogger_google_extensions",

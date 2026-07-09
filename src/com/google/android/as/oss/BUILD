@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("//configlang/ncl/build_defs:ncl.bzl", "ncl_library")
 load("//src/com/google/android/as/oss:build_defs.bzl", "pcs_dev_and_mpm")
 load("//testing/build_defs:text_proto_test.bzl", "text_proto_test")
 load("//tools/build_defs/testing:bzl_library.bzl", "bzl_library")
@@ -27,6 +28,8 @@ pcs_dev_and_mpm(
         "//src/com/google/android/as/oss/actionlauncher:prod_modules",  # buildcleaner: keep
         "//src/com/google/android/as/oss/ai/config/impl",  # buildcleaner: keep
         "//src/com/google/android/as/oss/ai/service",  # buildcleaner: keep
+        "//src/com/google/android/as/oss/asr/api",  # buildcleaner: keep
+        "//src/com/google/android/as/oss/asr/service",  # buildcleaner: keep
         "//src/com/google/android/as/oss/attestation/config/impl",  # buildcleaner: keep
         "//src/com/google/android/as/oss/attestation/impl:impl_module",  # buildcleaner: keep
         "//src/com/google/android/as/oss/attestation/jobs",  # buildcleaner: keep
@@ -94,7 +97,10 @@ pcs_dev_and_mpm(
         "//src/com/google/android/as/oss/privateinference/networkusage:module",  # buildcleaner: keep
         "//src/com/google/android/as/oss/privateinference/service",  # buildcleaner: keep
         "//src/com/google/android/as/oss/privateinference/transport/impl:transport_module",  # buildcleaner: keep
+        "//src/com/google/android/as/oss/sealedmemory",
+        "//src/com/google/android/as/oss/sealedmemory/service/impl:app_search_module",
         "//src/com/google/android/as/oss/settings/ui",
+        "//src/com/google/android/as/oss/supericon",
         "//src/com/google/android/as/oss/survey/config/impl",  # buildcleaner: keep
         "//src/com/google/android/as/oss/survey/service",  # buildcleaner: keep
         "//third_party/java/androidx/work",
@@ -104,4 +110,10 @@ pcs_dev_and_mpm(
         "@maven//:com_google_flogger_google_extensions",
         "@maven//:javax_inject_javax_inject",
     ],
+)
+
+ncl_library(
+    name = "pcs_common_ncl",
+    srcs = ["pcs_common.ncl"],
+    visibility = ["//src/com/google/android/as/oss:__subpackages__"],
 )

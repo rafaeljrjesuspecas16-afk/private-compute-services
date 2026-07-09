@@ -29,6 +29,7 @@ import com.android.personalcontext.ace.client.prototype.PrototypeInsightId.Embed
 import com.android.personalcontext.ace.client.prototype.PrototypeInsightId.EmptyRenderInsightId
 import com.android.personalcontext.ace.client.prototype.PrototypeInsightId.ExampleEmbeddedInsightId
 import com.android.personalcontext.ace.client.prototype.PrototypeInsightId.InsightGridId
+import com.android.personalcontext.ace.client.prototype.PrototypeInsightId.LoadingInsightId
 import com.android.personalcontext.ace.client.prototype.PrototypeInsightId.RenderTokenInsightId
 import com.android.personalcontext.ace.client.prototype.PrototypeInsightId.ServerSideCloseInsightId
 import com.android.personalcontext.ace.client.prototype.PrototypeInsightId.WeatherInsightId
@@ -40,6 +41,7 @@ import com.android.personalcontext.ace.client.prototype.embeddedscroll.EmbeddedS
 import com.android.personalcontext.ace.client.prototype.empty.EmptyRenderInsight
 import com.android.personalcontext.ace.client.prototype.example.ExampleEmbeddedInsight
 import com.android.personalcontext.ace.client.prototype.grid.InsightGrid
+import com.android.personalcontext.ace.client.prototype.loading.LoadingInsight
 import com.android.personalcontext.ace.client.prototype.rendertoken.RenderTokenInsight
 import com.android.personalcontext.ace.client.prototype.serversideclose.ServerSideCloseInsight
 import com.android.personalcontext.ace.client.prototype.weather.WeatherInsight
@@ -99,7 +101,7 @@ object PrototypeInsightUtils {
    * Insight collections do not have their own origin hints, only those derived from its child
    * elements.
    */
-  private val PrototypeInsight.originHintsToSerialize: Set<PublishedContextHint>
+  private val PrototypeInsight.originHintsToSerialize: Collection<PublishedContextHint>
     get() =
       when (this) {
         is PrototypeContextInsight -> originHints
@@ -111,7 +113,7 @@ object PrototypeInsightUtils {
     get() =
       when (this) {
         is PrototypeContextInsight -> emptyList()
-        is PrototypeInsightCollection -> exportInsightsToList()
+        is PrototypeInsightCollection -> exportInsightsToList().map { it.insight }
       }
 
   /**
@@ -145,6 +147,7 @@ object PrototypeInsightUtils {
         ServerSideCloseInsightId -> ServerSideCloseInsight
         RenderTokenInsightId -> RenderTokenInsight
         ClientSignalInsightId -> ClientSignalInsight
+        LoadingInsightId -> LoadingInsight
       }
 
     return creator.create(data.dataBundle, children, originHints)

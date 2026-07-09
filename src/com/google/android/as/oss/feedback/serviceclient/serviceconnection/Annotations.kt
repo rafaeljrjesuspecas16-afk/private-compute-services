@@ -21,4 +21,6 @@ import javax.inject.Qualifier
 /** Annotations for the data service connection. */
 object Annotations {
   @Qualifier @Retention(AnnotationRetention.RUNTIME) annotation class FeedbackDataService
+
+  @Qualifier @Retention(AnnotationRetention.RUNTIME) annotation class InternalFeedbackDataService
 }

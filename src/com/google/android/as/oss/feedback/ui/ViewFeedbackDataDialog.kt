@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
@@ -37,6 +38,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,10 +58,15 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategoryData
+import com.google.android.`as`.oss.feedback.domain.DataCollectionCategoryDataLegacy
+import com.google.android.`as`.oss.feedback.domain.FeedbackBodyItem
 import com.google.android.`as`.oss.feedback.domain.FeedbackUiState
+import com.google.android.`as`.oss.feedback.domain.OptInSelection.MultiSelection
+import com.google.android.`as`.oss.feedback.domain.OptInSelection.SingleSelection
 import com.google.android.`as`.oss.feedback.domain.ViewFeedbackData
 import com.google.android.`as`.oss.feedback.domain.fold
 import com.google.android.`as`.oss.feedback.quartz.serviceclient.QuartzFeedbackDonationData
@@ -74,7 +81,8 @@ fun ViewFeedbackDataContent(
   feedbackDonationDataResult: Result<FeedbackDonationData>?,
   quartzFeedbackDonationDataResult: Result<QuartzFeedbackDonationData>? = null,
   onViewDataScreenDisplayed: () -> Unit,
-  onViewDataSectionCheckedChange: (DataCollectionCategory, Boolean) -> Unit,
+  onViewDataSectionCheckedChange:
+    (DataCollectionCategory, Boolean, FeedbackBodyItem.CheckableListItem?) -> Unit,
   onViewDataSectionExpanded: () -> Unit,
   onBackPressed: () -> Unit,
   onDismissRequest: () -> Unit,
@@ -116,7 +124,7 @@ private fun ViewFeedbackDataContent(
   viewFeedbackData: ViewFeedbackData,
   selectedEntityHeader: String?,
   selectedEntityContents: List<String>,
-  onCheckedChange: (DataCollectionCategory, Boolean) -> Unit,
+  onCheckedChange: (DataCollectionCategory, Boolean, FeedbackBodyItem.CheckableListItem?) -> Unit,
   onSectionExpanded: () -> Unit,
 ) {
   val focusManager = LocalFocusManager.current
@@ -131,33 +139,71 @@ private fun ViewFeedbackDataContent(
         .verticalScroll(scrollState)
   ) {
     val categories =
-      selectedEntityCategory(selectedEntityHeader, selectedEntityContents) +
-        viewFeedbackData.dataCollectionCategories
+      if (uiState.enableFineGrainedViewDataDialog) {
+        selectedEntityCategory(selectedEntityHeader, selectedEntityContents) +
+          viewFeedbackData.dataCollectionCategories
+      } else {
+        selectedEntityCategory(selectedEntityHeader, selectedEntityContents) +
+          viewFeedbackData.dataCollectionCategoriesLegacy.mapValues {
+            it.value.toDataCollectionCategoryData()
+          }
+      }
 
     for ((category, data) in categories) {
       DataCollectionSection(
         viewFeedbackData = viewFeedbackData,
+        category = category,
         data = data,
         scrollState = scrollState,
         parentBounds = parentBounds,
-        checked = uiState.optInChecked[category] ?: false,
-        onCheckedChange = { onCheckedChange(category, it) },
+        onCheckedChange = { flag, item -> onCheckedChange(category, flag, item) },
         onSectionExpanded = onSectionExpanded,
+        uiState = uiState,
       )
     }
   }
 }
 
+private fun DataCollectionCategoryDataLegacy.toDataCollectionCategoryData():
+  DataCollectionCategoryData =
+  DataCollectionCategoryData(
+    header = header,
+    items = listOf(FeedbackBodyItem.SimpleText(id = "legacy_body", text = body)),
+  )
+
+// Helper to get all CheckableListItem IDs recursively
+private fun getAllCheckableIds(items: List<FeedbackBodyItem>): Set<String> {
+  val ids = mutableSetOf<String>()
+  fun collect(currentItems: List<FeedbackBodyItem>) {
+    for (item in currentItems) {
+      if (item is FeedbackBodyItem.CheckableListItem) {
+        ids.add(item.id)
+        collect(item.children)
+      }
+    }
+  }
+  collect(items)
+  return ids
+}
+
+private fun List<Boolean>.getToggleableState(): ToggleableState =
+  when {
+    all { it } -> ToggleableState.On
+    none { it } -> ToggleableState.Off
+    else -> ToggleableState.Indeterminate
+  }
+
 @Composable
 private fun DataCollectionSection(
   modifier: Modifier = Modifier,
   viewFeedbackData: ViewFeedbackData,
+  category: DataCollectionCategory,
   data: DataCollectionCategoryData,
   scrollState: ScrollState,
   parentBounds: Rect?,
-  checked: Boolean,
-  onCheckedChange: (Boolean) -> Unit,
+  onCheckedChange: (Boolean, FeedbackBodyItem.CheckableListItem?) -> Unit,
   onSectionExpanded: () -> Unit,
+  uiState: FeedbackUiState,
 ) {
   var shouldKeepInView by remember { mutableStateOf(false) }
   var childTop: Float? by remember { mutableStateOf(null) }
@@ -174,6 +220,8 @@ private fun DataCollectionSection(
     }
   }
 
+  val selection = uiState.dataCollectionStates[category]
+
   Column(
     modifier =
       modifier
@@ -187,11 +235,37 @@ private fun DataCollectionSection(
     var expanded by rememberSaveable { mutableStateOf(false) }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
-      Checkbox(
-        modifier = Modifier.semantics { this.contentDescription = data.header },
-        checked = checked,
-        onCheckedChange = onCheckedChange,
-      )
+      when (selection) {
+        is MultiSelection -> {
+          val allCheckableIds = remember(data.items) { getAllCheckableIds(data.items) }
+          val itemStatesMap = selection.itemStates
+          val itemStates = allCheckableIds.map { itemStatesMap[it] ?: false }
+          val triState = itemStates.getToggleableState()
+          TriStateCheckbox(
+            modifier = Modifier.semantics { this.contentDescription = data.header },
+            state = triState,
+            onClick = {
+              val newState = triState != ToggleableState.On
+              onCheckedChange(newState, null)
+            },
+          )
+        }
+        is SingleSelection -> {
+          Checkbox(
+            modifier = Modifier.semantics { this.contentDescription = data.header },
+            checked = selection.selected,
+            onCheckedChange = { newChecked -> onCheckedChange(newChecked, null) },
+          )
+        }
+        null -> {
+          Checkbox(
+            modifier = Modifier.semantics { this.contentDescription = data.header },
+            checked = false,
+            onCheckedChange = {},
+            enabled = false,
+          )
+        }
+      }
 
       Row(
         modifier =
@@ -234,13 +308,127 @@ private fun DataCollectionSection(
     }
 
     if (expanded) {
-      Text(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        text = data.body,
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-      )
+      FeedbackBodyItemList(category, data.items, uiState, onCheckedChange)
     }
+  }
+}
+
+@Composable
+private fun FeedbackBodyItemList(
+  category: DataCollectionCategory,
+  items: List<FeedbackBodyItem>,
+  uiState: FeedbackUiState,
+  onCheckedChange: (Boolean, FeedbackBodyItem.CheckableListItem?) -> Unit,
+) {
+  Column(modifier = Modifier.padding(start = 16.dp, top = 8.dp)) {
+    for (item in items) {
+      when (item) {
+        is FeedbackBodyItem.SimpleText -> {
+          Text(
+            text = item.text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 8.dp),
+          )
+        }
+        is FeedbackBodyItem.CheckableListItem -> {
+          RenderCheckableListItem(category, item, uiState, onCheckedChange)
+        }
+        is FeedbackBodyItem.ChildText -> {
+          Text(
+            text = item.text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 32.dp, top = 8.dp, bottom = 8.dp),
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun RenderCheckableListItem(
+  category: DataCollectionCategory,
+  item: FeedbackBodyItem.CheckableListItem,
+  uiState: FeedbackUiState,
+  onCheckedChange: (Boolean, FeedbackBodyItem.CheckableListItem?) -> Unit,
+) {
+  val selection = uiState.dataCollectionStates[category]
+  var expanded by rememberSaveable(item.id) { mutableStateOf(false) }
+
+  if (selection is MultiSelection) {
+    val itemStatesMap = selection.itemStates
+    val isItemChecked = itemStatesMap[item.id] ?: item.defaultChecked
+
+    val descendantIds = remember(item) { getAllCheckableIds(item.children) }
+    val hasCheckableChildren = descendantIds.isNotEmpty()
+
+    Column {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        if (!hasCheckableChildren) {
+          Checkbox(
+            checked = isItemChecked,
+            onCheckedChange = { newChecked -> onCheckedChange(newChecked, item) },
+          )
+        } else {
+          val descendantStates = descendantIds.map { itemStatesMap[it] ?: false }
+          val childrenToggleState = descendantStates.getToggleableState()
+
+          val triState =
+            when {
+              isItemChecked && childrenToggleState == ToggleableState.On -> ToggleableState.On
+              !isItemChecked && childrenToggleState == ToggleableState.Off -> ToggleableState.Off
+              else -> ToggleableState.Indeterminate
+            }
+
+          TriStateCheckbox(
+            state = triState,
+            onClick = {
+              val newState = triState != ToggleableState.On
+              onCheckedChange(newState, item)
+            },
+          )
+        }
+
+        Row(
+          modifier =
+            Modifier.fillMaxWidth()
+              .clickable { if (item.children.isNotEmpty()) expanded = !expanded }
+              .padding(vertical = 8.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+          Text(
+            text = item.title,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+          )
+          if (item.children.isNotEmpty()) {
+            Icon(
+              painter =
+                painterResource(
+                  if (expanded) {
+                    R.drawable.keyboard_arrow_up_24
+                  } else {
+                    R.drawable.keyboard_arrow_down_24
+                  }
+                ),
+              contentDescription = if (expanded) "Collapse" else "Expand",
+              tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+        }
+      }
+      if (expanded && item.children.isNotEmpty()) {
+        Box(modifier = Modifier.padding(start = 24.dp)) {
+          FeedbackBodyItemList(category, item.children, uiState, onCheckedChange)
+        }
+      }
+    }
+  } else {
+    // This case should not happen for CheckableListItems
+    Text("Error: Item in a non-MultiSelection category", color = MaterialTheme.colorScheme.error)
   }
 }
 
@@ -270,7 +458,13 @@ private fun selectedEntityCategory(
       DataCollectionCategory.SelectedEntityContent to
         DataCollectionCategoryData(
           header = selectedEntityHeader,
-          body = selectedEntityContents.joinToString("\n"),
+          items =
+            listOf(
+              FeedbackBodyItem.SimpleText(
+                id = "selected_entity",
+                text = selectedEntityContents.joinToString("\n"),
+              )
+            ),
         )
     )
   } else {
@@ -288,7 +482,15 @@ private data class CombinedFeedbackData(val first: ViewFeedbackData, val second:
 
   override val dataCollectionCategories: Map<DataCollectionCategory, DataCollectionCategoryData> =
     first.dataCollectionCategories.mergeWith(second.dataCollectionCategories) { data1, data2 ->
-      DataCollectionCategoryData(
+      DataCollectionCategoryData(header = data1.header, items = data1.items + data2.items)
+    }
+
+  override val dataCollectionCategoriesLegacy:
+    Map<DataCollectionCategory, DataCollectionCategoryDataLegacy> =
+    first.dataCollectionCategoriesLegacy.mergeWith(second.dataCollectionCategoriesLegacy) {
+      data1,
+      data2 ->
+      DataCollectionCategoryDataLegacy(
         header = data1.header,
         body = listOf(data1.body, data2.body).joinToString("\n"),
       )

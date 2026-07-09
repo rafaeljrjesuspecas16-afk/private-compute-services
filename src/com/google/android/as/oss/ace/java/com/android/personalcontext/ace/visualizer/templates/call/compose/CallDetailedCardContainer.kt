@@ -78,16 +78,22 @@ fun CallDetailedCardContainer(card: CallVisualizerDetailedCard, useCardContainer
       colors = CardDefaults.cardColors(containerColor = containerColor),
       shape = RoundedCornerShape(24.dp),
     ) {
-      CallDetailedCardContent(card)
+      CallDetailedCardContent(
+        card = card,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+      )
     }
   } else {
-    CallDetailedCardContent(card)
+    CallDetailedCardContent(card = card)
   }
 }
 
 @Composable
-private fun CallDetailedCardContent(card: CallVisualizerDetailedCard) {
-  Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp)) {
+private fun CallDetailedCardContent(
+  card: CallVisualizerDetailedCard,
+  modifier: Modifier = Modifier,
+) {
+  Column(modifier = modifier) {
     CardHeader(cardTitle = card.title)
     Spacer(modifier = Modifier.height(16.dp))
 

@@ -76,6 +76,7 @@ android_library(
     srcs = ["PrototypeTransformCompatImpl.kt"],
     deps = [
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype:prototype_utils",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/common:labeled_context_insight",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/visualizer/compat:prototype_transform_compat",
         "@maven//:javax_inject_javax_inject",
     ],
@@ -123,6 +124,8 @@ android_library(
     deps = [
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype:prototype_utils",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/clientaction",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/client/prototype/clientaction/params",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/common:insight_extended_details",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/visualizer/compat:client_action_insight_compat",
         "@maven//:javax_inject_javax_inject",
     ],
@@ -146,7 +149,7 @@ android_library(
         "EnergyEffectsAnimationCompatImpl.kt",
     ],
     deps = [
-        "//java/com/google/android/systemui/graphics/shaderlib:compose",
+        "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/internal/energyeffects",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/visualizer/compat:energy_effects_animation_compat",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/visualizer/compat:theme_compat",
         "//src/com/google/android/as/oss/ace/java/com/android/personalcontext/ace/visualizer/templates",

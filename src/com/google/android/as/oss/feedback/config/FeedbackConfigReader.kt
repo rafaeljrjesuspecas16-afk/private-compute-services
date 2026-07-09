@@ -21,9 +21,17 @@ import com.google.android.`as`.oss.common.config.FlagListener
 import com.google.android.`as`.oss.common.config.FlagManager
 import com.google.android.`as`.oss.common.flavor.BuildFlavor
 import com.google.android.`as`.oss.feedback.api.gateway.QuartzCUJ
+import com.google.android.`as`.oss.feedback.api.gateway.SpoonCUJ
+import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.AppInfo
+import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.FailureReason
+import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.IntentQueries
+import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.MemoryEntities
+import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.ModelOutputs
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.NotificationContent
 import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.QuartzModelOutputs
+import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.SelectedEntityContent
+import com.google.android.`as`.oss.feedback.domain.DataCollectionCategory.TriggeringMessages
 
 /** Config reader for Feedback. */
 class FeedbackConfigReader(
@@ -44,6 +52,19 @@ class FeedbackConfigReader(
   }
 
   override fun computeConfig(): FeedbackConfig {
+    val defaultGeneralSpoonDonationOptInEnabled =
+      flagManager.get(FeedbackFlags.ENABLE_DEFAULT_GENERAL_SPOON_DONATION_OPT_IN)
+    val defaultDonationOptInL1Enabled =
+      flagManager.get(FeedbackFlags.ENABLE_DEFAULT_DONATION_OPT_IN_L1)
+    val defaultDonationOptInL0Enabled =
+      flagManager.get(FeedbackFlags.ENABLE_DEFAULT_DONATION_OPT_IN_L0)
+    val defaultOptInMap =
+      createDefaultOptInMap(
+        defaultGeneralSpoonDonationOptInEnabled,
+        defaultDonationOptInL1Enabled,
+        defaultDonationOptInL0Enabled,
+      )
+
     return FeedbackConfig(
       enableSelectedEntityContent = flagManager.get(FeedbackFlags.ENABLE_SELECTED_ENTITY_CONTENT),
       enableViewDataDialogV2SingleEntity =
@@ -53,17 +74,57 @@ class FeedbackConfigReader(
         flagManager.get(FeedbackFlags.ENABLE_GROUND_TRUTH_SELECTOR_SINGLE_ENTITY),
       enableGroundTruthSelectorMultiEntity =
         flagManager.get(FeedbackFlags.ENABLE_GROUND_TRUTH_SELECTOR_MULTI_ENTITY),
-      dataCollectionCategoryDefaultOptIn =
-        if (buildFlavor == BuildFlavor.INTERNAL) {
-          mapOf(
-            QuartzCUJ.QUARTZ_CUJ_KEY_TYPE.name to
-              listOf(NotificationContent, QuartzModelOutputs, AppInfo),
-            QuartzCUJ.QUARTZ_CUJ_KEY_SUMMARIZATION.name to
-              listOf(NotificationContent, QuartzModelOutputs, AppInfo),
-          )
-        } else {
-          emptyMap()
-        },
+      dataCollectionCategoryDefaultOptIn = defaultOptInMap,
+      enableFineGrainedViewDataDialog =
+        flagManager.get(FeedbackFlags.ENABLE_FINE_GRAINED_VIEW_DATA_DIALOG),
+      enableDefaultDonationOptInL1 = defaultDonationOptInL1Enabled,
+      enableDefaultDonationOptInL0 = defaultDonationOptInL0Enabled,
     )
+  }
+
+  private fun createDefaultOptInMap(
+    defaultGeneralSpoonDonationOptInEnabled: Boolean,
+    defaultDonationOptInL1Enabled: Boolean,
+    defaultDonationOptInL0Enabled: Boolean,
+  ): Map<String, List<DataCollectionCategory>> = buildMap {
+    if (buildFlavor == BuildFlavor.INTERNAL) {
+      put(
+        QuartzCUJ.QUARTZ_CUJ_KEY_TYPE.name,
+        listOf(NotificationContent, QuartzModelOutputs, AppInfo),
+      )
+      put(
+        QuartzCUJ.QUARTZ_CUJ_KEY_SUMMARIZATION.name,
+        listOf(NotificationContent, QuartzModelOutputs, AppInfo),
+      )
+    }
+
+    val categoriesToApply: List<DataCollectionCategory> = buildList {
+      // Add general categories if the flag is enabled
+      if (defaultGeneralSpoonDonationOptInEnabled) {
+        add(TriggeringMessages)
+        add(IntentQueries)
+        add(ModelOutputs)
+        add(FailureReason)
+        add(SelectedEntityContent)
+      }
+
+      // Add MemoryEntities if either L1 or L0 flag is enabled
+      if (defaultDonationOptInL1Enabled || defaultDonationOptInL0Enabled) {
+        add(MemoryEntities)
+      }
+    }
+
+    if (categoriesToApply.isNotEmpty()) {
+      for (cuj in SPOON_CUJS) {
+        put(cuj.name, categoriesToApply)
+      }
+    }
+  }
+
+  companion object {
+    private val SPOON_CUJS =
+      SpoonCUJ.values().filter { cuj ->
+        cuj != SpoonCUJ.SPOON_CUJ_UNKNOWN && cuj != SpoonCUJ.UNRECOGNIZED
+      }
   }
 }

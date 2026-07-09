@@ -24,8 +24,8 @@ import com.google.android.`as`.oss.feedback.api.gateway.MessageArmourCUJ
 import com.google.android.`as`.oss.feedback.api.gateway.QuartzCUJ
 import com.google.android.`as`.oss.feedback.api.gateway.Rating
 import com.google.android.`as`.oss.feedback.api.gateway.RuntimeConfig
+import com.google.android.`as`.oss.feedback.api.gateway.SpoonFeedbackDataDonation
 import com.google.android.`as`.oss.feedback.api.gateway.UserDataDonationOption
-import com.google.android.`as`.oss.feedback.api.gateway.UserDonation
 import com.google.android.`as`.oss.feedback.messagearmour.utils.MessageArmourDataHelper
 import com.google.android.`as`.oss.feedback.quartz.utils.QuartzDataHelper
 import com.google.android.`as`.oss.networkusage.db.ConnectionDetails.ConnectionType
@@ -73,13 +73,13 @@ internal constructor(
       !networkUsageLogRepository.isKnownConnection(
         ConnectionType.FEEDBACK_REQUEST,
         FEATURE_NAME_FEEDBACK_PSI,
-      ) ||
-        networkUsageLogRepository.shouldRejectRequest(
+      ) &&
+        !networkUsageLogRepository.isKnownConnection(
           ConnectionType.FEEDBACK_REQUEST,
           FEATURE_NAME_FEEDBACK_ASI,
         )
     ) {
-      logger.atInfo().log("Feedback upload request rejected or connection is not known")
+      logger.atInfo().log("Feedback upload request rejected as connection is not known")
       return false
     }
     val client = OkHttpClient.Builder().build()
@@ -95,22 +95,23 @@ internal constructor(
 
     try {
       val response = client.newCall(okRequest).execute()
-      val responseBody = response.body
+      val responseBody = response.body?.string() // Read body once
       insertNetworkUsageLogRow(
         networkUsageLogRepository,
         usageLogFeatureName,
-        if (responseBody != null) Status.SUCCEEDED else Status.FAILED,
-        responseBody?.bytes()?.size?.toLong() ?: 0L,
+        if (response.isSuccessful) Status.SUCCEEDED else Status.FAILED,
+        responseBody?.toByteArray()?.size?.toLong() ?: 0L,
       )
 
       if (response.isSuccessful) {
         logger.atInfo().log("APEX server call successful")
         return true
       } else {
-        logger.atInfo().log("APEX server call failed with response: %s", response.toString())
+        logger.atWarning().log("APEX server call failed with response: %s", response.toString())
+        logger.atWarning().log("Response body: %s", responseBody)
       }
     } catch (e: IOException) {
-      logger.atSevere().log("APEX server call failed with exception: %s", e.stackTraceToString())
+      logger.atSevere().withCause(e).log("APEX server call failed with exception")
     }
     return false
   }
@@ -160,107 +161,112 @@ internal constructor(
 /** Converts [LogFeedbackV2Request] to a Json-like string that can be parsed by the APEX service. */
 @VisibleForTesting
 fun LogFeedbackV2Request.convertToRequestString(): String {
-  var finalString: String =
-    "{" +
-      "${quote("appId")}: ${quote(appId)}, " +
-      "${quote("interactionId")}: ${quote(interactionId)}, " +
-      "${quote("donationOption")}: ${quote(donationOption.name)}, " +
-      "${quote("appCujType")}: ${getCujTypeString(feedbackCuj)}, " +
-      "${quote("runtimeConfig")}: ${getRuntimeConfigString(runtimeConfig)}"
+  val mainParts =
+    buildList<String> {
+      add("${quote("appId")}: ${quote(appId)}")
+      add("${quote("interactionId")}: ${quote(interactionId)}")
+      add("${quote("donationOption")}: ${quote(donationOption.name)}")
+      add("${quote("appCujType")}: ${getCujTypeString(feedbackCuj)}")
+      add("${quote("runtimeConfig")}: ${getRuntimeConfigString(runtimeConfig)}")
 
-  if (rating == Rating.THUMB_UP) {
-    finalString = finalString.plus(", ${quote("positiveTags")}: [")
-    for (i in 0 until positiveTagsList.size) {
-      finalString = finalString.plus(quote(positiveTagsList[i].name))
-      // Add comma between tags.
-      if (i < positiveTagsList.size - 1) finalString = finalString.plus(", ")
+      if (rating == Rating.THUMB_UP && positiveTagsList.isNotEmpty()) {
+        add("${quote("positiveTags")}: ${buildRepeatedMessages(positiveTagsList.map { it.name })}")
+      }
+
+      if (rating == Rating.THUMB_DOWN && negativeTagsList.isNotEmpty()) {
+        add("${quote("negativeTags")}: ${buildRepeatedMessages(negativeTagsList.map { it.name })}")
+      }
+
+      if (donationOption == UserDataDonationOption.OPT_IN) {
+        add(getDonationDataString(userDonation.structuredDataDonation))
+      }
+
+      add(
+        getUserInputString(
+          structuredUserInput.spoonUserInput.groundTruthListList,
+          structuredUserInput.spoonUserInput.optionalSpoonComment,
+        )
+      )
+      add("${quote("feedbackRating")}: {${quote("binaryRating")}: ${quote(rating.name)}}")
+      add("${quote("additionalComment")}: ${quote(additionalComment)}")
     }
-    finalString = finalString.plus("]")
-  }
 
-  if (rating == Rating.THUMB_DOWN) {
-    finalString = finalString.plus(", ${quote("negativeTags")}: [")
-    for (i in 0 until negativeTagsList.size) {
-      finalString = finalString.plus(quote(negativeTagsList[i].name))
-      // Add comma between tags.
-      if (i < negativeTagsList.size - 1) finalString = finalString.plus(", ")
-    }
-    finalString = finalString.plus("]")
-  }
-
-  if (donationOption == UserDataDonationOption.OPT_IN) {
-    finalString = finalString.plus(getDonationDataString(userDonation))
-  }
-
-  finalString =
-    finalString.plus(getUserInputString(structuredUserInput.spoonUserInput.groundTruthListList))
-
-  // Feedback rating.
-  finalString =
-    finalString.plus(
-      ", ${quote("feedbackRating")}: {${quote("binaryRating")}: ${quote(rating.name)}}"
-    )
-
-  // Feedback additional comment.
-  finalString = finalString.plus(", ${quote("additionalComment")}: ${quote(additionalComment)}")
-
-  // Add the ending indicator.
-  finalString = finalString.plus("}")
-
-  return finalString
+  return "{${mainParts.joinToString(", ")}}"
 }
 
-private fun getUserInputString(groundTruthList: List<String>): String {
-  var inputString = ""
-  inputString =
-    inputString.plus(
-      ", ${quote("structuredUserInput")}: {" +
-        "${quote("pixelSpoonUserInput")}: {" +
-        if (groundTruthList.isNotEmpty()) {
-          "${quote("groundTruthList")}: " + buildGroundTruth(groundTruthList)
-        } else {
-          ""
-        } +
-        "}}"
-    )
-
-  return inputString
+private fun getUserInputString(groundTruthList: List<String>, additionalComment: String): String {
+  val parts =
+    buildList<String> {
+      add("${quote("optionalSpoonComment")}: ${quote(additionalComment)}")
+      if (groundTruthList.isNotEmpty()) {
+        add("${quote("groundTruthList")}: ${buildGroundTruth(groundTruthList)}")
+      }
+    }
+  return "${quote("structuredUserInput")}: {${quote("pixelSpoonUserInput")}: {${parts.joinToString(", ")}}}"
 }
 
-private fun getDonationDataString(userDonation: UserDonation): String {
-  var donationString = ""
-  donationString =
-    donationString.plus(
-      ", ${quote("userDonation")}: " +
-        "{${quote("structuredDataDonation")}: " +
-        "{${quote("pixelSpoonDonation")}: " +
-        "{${quote("triggeringMessages")}: " +
-        buildRepeatedMessages(userDonation.structuredDataDonation.triggeringMessagesList) +
-        ", " +
-        "${quote("intentQueries")}: " +
-        buildRepeatedMessages(userDonation.structuredDataDonation.intentQueriesList) +
-        ", " +
-        "${quote("modelOutputs")}: " +
-        buildRepeatedMessages(userDonation.structuredDataDonation.modelOutputsList) +
-        if (userDonation.structuredDataDonation.memoryEntitiesList.isNotEmpty()) {
-          ", " +
-            "${quote("memoryEntities")}: " +
-            buildMemoryEntities(userDonation.structuredDataDonation.memoryEntitiesList)
-        } else {
-          ""
-        } +
-        if (userDonation.structuredDataDonation.selectedEntityContent.isNotEmpty()) {
-          ", " +
-            "${quote("selectedEntityContent")}: " +
-            quote(userDonation.structuredDataDonation.selectedEntityContent)
-        } else {
-          ""
-        } +
-        "}}"
-    )
+private fun getDonationDataString(structuredDataDonation: SpoonFeedbackDataDonation): String {
+  val donatedMemoryEntities: List<MemoryEntity>
+  val donatedL0Entries: List<String>
+  if (structuredDataDonation.sourceDocumentsList.isNotEmpty()) {
+    // Client is using the fine-grained structure, map to server proto fields
+    donatedMemoryEntities =
+      structuredDataDonation.sourceDocumentsList
+        .filter { it.hasMemoryEntity() }
+        .map { it.memoryEntity }
+    donatedL0Entries =
+      structuredDataDonation.sourceDocumentsList.map { it.l0Content }.filter { it.isNotEmpty() }
+  } else {
+    // Fallback for client not using fine-grained structure
+    donatedMemoryEntities = structuredDataDonation.memoryEntitiesList
+    donatedL0Entries = emptyList()
+  }
 
-  donationString = donationString.plus("}")
-  return donationString
+  val parts =
+    buildList<String> {
+      if (structuredDataDonation.triggeringMessagesList.isNotEmpty()) {
+        add(
+          "${quote("triggeringMessages")}: " +
+            buildRepeatedMessages(structuredDataDonation.triggeringMessagesList)
+        )
+      }
+      val nonEmptyIntentQueries =
+        structuredDataDonation.intentQueriesList.filter { it.isNotEmpty() }
+      if (nonEmptyIntentQueries.isNotEmpty()) {
+        add("${quote("intentQueries")}: " + buildRepeatedMessages(nonEmptyIntentQueries))
+      }
+      if (structuredDataDonation.modelOutputsList.isNotEmpty()) {
+        add(
+          "${quote("modelOutputs")}: " +
+            buildRepeatedMessages(structuredDataDonation.modelOutputsList)
+        )
+      }
+
+      if (structuredDataDonation.selectedEntityContent.isNotEmpty()) {
+        add(
+          "${quote("selectedEntityContent")}: " +
+            quote(structuredDataDonation.selectedEntityContent)
+        )
+      }
+
+      if (donatedMemoryEntities.isNotEmpty()) {
+        add("${quote("memoryEntities")}: " + buildMemoryEntities(donatedMemoryEntities))
+      }
+
+      if (donatedL0Entries.isNotEmpty()) {
+        add("${quote("l0Entries")}: " + buildRepeatedMessages(donatedL0Entries))
+      }
+
+      if (structuredDataDonation.failureReason.isNotEmpty()) {
+        add("${quote("failureReason")}: " + quote(structuredDataDonation.failureReason))
+      }
+    }
+
+  val donationContent = if (parts.isEmpty()) "{}" else "{${parts.joinToString(", ")}}"
+
+  return "${quote("userDonation")}: " +
+    "{${quote("structuredDataDonation")}: " +
+    "{${quote("pixelSpoonDonation")}: $donationContent}}"
 }
 
 private fun getRuntimeConfigString(config: RuntimeConfig): String {

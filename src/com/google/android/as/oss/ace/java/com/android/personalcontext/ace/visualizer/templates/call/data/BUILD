@@ -16,6 +16,7 @@ load("@bazel_rules_android//android:rules.bzl", "android_library")
 
 package(
     default_visibility = [
+        "//javatests/com/google/android/apps/miphone/pcs/ace/java/com/android/personalcontext/ace/visualizer/templates/call/data:__subpackages__",
         "//third_party/java/android_app/personalcontext:libraries",
     ],
 )

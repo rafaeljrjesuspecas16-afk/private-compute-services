@@ -18,6 +18,7 @@
 
 package com.android.personalcontext.ace.client.prototype.weather
 
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.service.personalcontext.hint.PublishedContextHint
 import android.service.personalcontext.insight.ContextInsight
@@ -29,7 +30,7 @@ import java.time.Instant
 /** An insight for the Weather. */
 data class WeatherInsight(
   val chipContents: List<ChipContent>,
-  override val originHints: Set<PublishedContextHint>,
+  override val originHints: Collection<PublishedContextHint>,
 ) : PrototypeContextInsight(WeatherInsightId, this) {
 
   override fun exportDataToBundle(bundle: Bundle) {
@@ -67,6 +68,9 @@ data class WeatherInsight(
     val startTime: Instant? = null,
     val endTime: Instant? = null,
     val eventTitle: String? = null, // Title shows in the detailed description page.
+
+    /* Dynamic image/icon passed from parent template producers. */
+    val image: Bitmap? = null,
   ) {
 
     fun toContextInsight(originHints: Set<PublishedContextHint> = emptySet()): ContextInsight {
@@ -93,6 +97,7 @@ data class WeatherInsight(
       private const val KEY_START_TIMES = "start_times"
       private const val KEY_END_TIMES = "end_times"
       private const val KEY_EVENT_TITLES = "event_titles"
+      private const val KEY_IMAGES = "images"
 
       fun toBundle(bundle: Bundle, contents: List<ChipContent>) {
         bundle.putStringArrayList(KEY_TITLES, ArrayList(contents.map { it.title }))
@@ -115,6 +120,7 @@ data class WeatherInsight(
           ArrayList(contents.map { it.endTime?.toEpochMilli() }),
         )
         bundle.putStringArrayList(KEY_EVENT_TITLES, ArrayList(contents.map { it.eventTitle }))
+        bundle.putParcelableArrayList(KEY_IMAGES, ArrayList(contents.map { it.image }))
       }
 
       @Suppress("UNCHECKED_CAST", "DEPRECATION")
@@ -139,6 +145,7 @@ data class WeatherInsight(
             it?.let { Instant.ofEpochMilli(it) }
           } ?: return emptyList()
         val eventTitles = bundle.getStringArrayList(KEY_EVENT_TITLES) ?: return emptyList()
+        val images = bundle.getParcelableArrayList<Bitmap>(KEY_IMAGES)
 
         val sizes =
           listOf(
@@ -171,6 +178,7 @@ data class WeatherInsight(
               startTimes[i],
               endTimes[i],
               eventTitles[i],
+              images?.getOrNull(i),
             )
           )
         }

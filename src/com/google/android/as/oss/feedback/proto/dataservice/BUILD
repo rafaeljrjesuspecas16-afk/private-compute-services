@@ -13,7 +13,9 @@
 # limitations under the License.
 
 load("@rules_proto_grpc//java:defs.bzl", "java_grpc_library")
+load("//net/proto2/compiler/stubby/java:java_stubby_library.bzl", "java_stubby_library")
 load("//third_party/protobuf/bazel:java_lite_proto_library.bzl", "java_lite_proto_library")
+load("//third_party/protobuf/bazel:java_proto_library.bzl", "java_proto_library")
 load("//third_party/protobuf/bazel:proto_library.bzl", "proto_library")
 load("//third_party/protobuf/build_defs:kt_jvm_proto_library.bzl", "kt_jvm_lite_proto_library")
 load("//tools/build_defs/kotlin:rules.bzl", "kt_jvm_grpc_library")
@@ -50,6 +52,55 @@ kt_jvm_lite_proto_library(
     deps = [":data_service_proto"],
 )
 
+proto_library(
+    name = "internal_data_service_proto",
+    srcs = ["internal_data_service.proto"],
+    has_services = True,
+    deps = [":internal_feedback_data_proto"],
+)
+
+kt_jvm_lite_proto_library(
+    name = "internal_data_service_kt_proto_lite",
+    deps = [":internal_data_service_proto"],
+)
+
+java_lite_proto_library(
+    name = "internal_data_service_java_proto_lite",
+    deps = [":internal_data_service_proto"],
+)
+
+java_proto_library(
+    name = "internal_data_service_java_proto",
+    deps = [":internal_data_service_proto"],
+)
+
+java_stubby_library(
+    name = "internal_data_service_java_stubby",
+    srcs = [":internal_data_service_proto"],
+    deps = [":internal_data_service_java_proto"],
+)
+
+proto_library(
+    name = "internal_feedback_data_proto",
+    srcs = ["internal_feedback_data.proto"],
+    deps = [""],
+)
+
+kt_jvm_lite_proto_library(
+    name = "internal_feedback_data_kt_proto_lite",
+    deps = [":internal_feedback_data_proto"],
+)
+
+java_lite_proto_library(
+    name = "internal_feedback_data_java_proto_lite",
+    deps = [":internal_feedback_data_proto"],
+)
+
+java_proto_library(
+    name = "internal_feedback_data_java_proto",
+    deps = [":internal_feedback_data_proto"],
+)
+
 java_grpc_library(
     name = "data_service_java_grpc",
     srcs = [":data_service_proto"],
@@ -63,4 +114,11 @@ kt_jvm_grpc_library(
     srcs = [":data_service_proto"],
     flavor = "lite",
     deps = [":data_service_kt_proto_lite"],
+)
+
+kt_jvm_grpc_library(
+    name = "internal_data_service_kt_grpc",
+    srcs = [":internal_data_service_proto"],
+    flavor = "lite",
+    deps = [":internal_data_service_kt_proto_lite"],
 )

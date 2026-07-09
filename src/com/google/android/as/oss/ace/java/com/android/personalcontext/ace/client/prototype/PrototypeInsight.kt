@@ -23,6 +23,7 @@ import android.service.personalcontext.Token
 import android.service.personalcontext.hint.PublishedContextHint
 import android.service.personalcontext.insight.ContextInsight
 import androidx.annotation.IntRange
+import com.android.personalcontext.ace.common.LabeledContextInsight
 
 /**
  * The [PrototypeInsight] pattern enables the creation of custom [ContextInsight] types for
@@ -47,13 +48,13 @@ import androidx.annotation.IntRange
 sealed class PrototypeInsight(val id: PrototypeInsightId, val creator: Creator) {
 
   /** @see [ContextInsight.getOriginHints] */
-  abstract val originHints: Set<PublishedContextHint>
+  abstract val originHints: Collection<PublishedContextHint>
 
   /** @see [ContextInsight.getTokens] */
   open val tokens: List<Token> = emptyList()
 
   /** @see [ContextInsight.getChildren] */
-  abstract val children: List<ContextInsight>
+  abstract val children: List<LabeledContextInsight>
 
   /**
    * Exports the primitive data for this insight into the given [Bundle].
@@ -112,7 +113,7 @@ abstract class PrototypeContextInsight(
   creator: PrototypeContextInsightCreator,
 ) : PrototypeInsight(id, creator) {
 
-  final override val children: List<ContextInsight>
+  final override val children: List<LabeledContextInsight>
     get() = emptyList()
 
   /** A specialized [Creator] for [PrototypeContextInsight]. */
@@ -153,18 +154,18 @@ abstract class PrototypeInsightCollection(
 ) : PrototypeInsight(id, creator) {
 
   /** Insight collections origin hints are derived from its child elements. */
-  final override val originHints: Set<PublishedContextHint>
-    get() = exportInsightsToList().flatMap { it?.originHints ?: emptySet() }.toSet()
+  final override val originHints: Collection<PublishedContextHint>
+    get() = exportInsightsToList().flatMap { it.insight?.originHints ?: emptySet() }.toSet()
 
-  final override val children: List<ContextInsight>
-    get() = exportInsightsToList().filterNotNull()
+  final override val children: List<LabeledContextInsight>
+    get() = exportInsightsToList()
 
   /**
    * Exports the child [ContextInsight]s for this collection into a list.
    *
    * @return A list of child insights contained within this collection.
    */
-  abstract fun exportInsightsToList(): List<ContextInsight?>
+  abstract fun exportInsightsToList(): List<LabeledContextInsight>
 
   /** A specialized [Creator] for [PrototypeInsightCollection]. */
   abstract class PrototypeInsightCollectionCreator : Creator {
@@ -195,7 +196,7 @@ abstract class PrototypeInsightCollection(
  *   ensure backwards-compatibility.
  * @property typeName The class name of the prototype, may be used by OSI for identification.
  */
-// Next ID: 12
+// Next ID: 13
 enum class PrototypeInsightId(@field:IntRange(from = 1) val uid: Int, val typeName: String) {
   ExampleEmbeddedInsightId(1, "ExampleEmbeddedInsight"),
   EmbeddedScrollInsightId(2, "EmbeddedScrollInsight"),
@@ -207,4 +208,5 @@ enum class PrototypeInsightId(@field:IntRange(from = 1) val uid: Int, val typeNa
   ServerSideCloseInsightId(9, "ServerSideCloseInsight"),
   RenderTokenInsightId(10, "RenderTokenInsight"),
   ClientSignalInsightId(11, "ClientSignalInsight"),
+  LoadingInsightId(12, "LoadingInsight"),
 }

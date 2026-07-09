@@ -35,6 +35,8 @@ object DataAttributionApi {
   internal const val EXTRA_ATTRIBUTION_CHIP_DATA_PROTO = "attribution_chip_data_proto"
   /** Key for the source deep links in the Intent bundle. */
   internal const val EXTRA_ATTRIBUTION_SOURCE_DEEP_LINKS = "attribution_source_deep_links"
+  /** Key for the settings PendingIntent in the Intent bundle. */
+  internal const val EXTRA_ATTRIBUTION_SETTINGS_INTENT = "attribution_settings_intent"
 
   private const val PCS_PKG_NAME: String = "com.google.android.as.oss"
 
@@ -57,6 +59,7 @@ object DataAttributionApi {
     attributionDialogData: AttributionDialogData,
     attributionChipData: AttributionChipData?,
     sourceDeepLinks: Array<PendingIntent?>?,
+    settingsIntent: PendingIntent? = null,
   ): Intent {
     require(
       sourceDeepLinks == null || sourceDeepLinks.size == attributionDialogData.attributionsCount
@@ -77,6 +80,7 @@ object DataAttributionApi {
         putExtra(EXTRA_ATTRIBUTION_DIALOG_DATA_PROTO, attributionDialogData.toByteArray())
         attributionChipData?.let { putExtra(EXTRA_ATTRIBUTION_CHIP_DATA_PROTO, it.toByteArray()) }
         sourceDeepLinks?.let { putExtra(EXTRA_ATTRIBUTION_SOURCE_DEEP_LINKS, it) }
+        settingsIntent?.let { putExtra(EXTRA_ATTRIBUTION_SETTINGS_INTENT, it) }
       }
 
     return intent

@@ -18,49 +18,43 @@
 
 package com.android.personalcontext.ace.visualizer.compat
 
+import android.graphics.drawable.Drawable
+import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.graphics.Color
+import com.android.personalcontext.ace.internal.energyeffects.EnergyEffectsAnimationUtils.GeminiAnimationSpec
 
 interface EnergyEffectsAnimationCompat {
-  /** The style of the Gemini Intelligence animation. */
-  enum class AnimationStyle {
-    /** An animation style for chips. */
-    CHIP,
-    /** An animation style for cards. */
-    CARD,
-  }
-
   /**
    * Modifier that applies the energy effects animation to the composable if enabled, otherwise
    * applies the [fallback] modifier.
    *
-   * @param cornerRadius The corner radius of the composable.
-   * @param strokeColor The stroke color of the composable.
-   * @param style The style of the animation.
+   * @param geminiAnimationSpec The spec of the animation.
    * @param fallback A modifier to apply if the energy effects animation is not enabled.
    */
   @Composable
-  fun applyEnergyEffectsAnimation(
-    cornerRadius: CornerRadius,
-    strokeColor: Color,
-    style: AnimationStyle,
+  fun Modifier.applyEnergyEffectsAnimation(
+    geminiAnimationSpec: GeminiAnimationSpec,
     fallback: @Composable Modifier.() -> Modifier,
-  ): Modifier = Modifier
+  ): Modifier = this
 
   /**
    * Modifier that applies the energy effects animation to the composable if enabled, otherwise
    * returns the original modifier.
    *
-   * @param cornerRadius The corner radius of the composable.
-   * @param strokeColor The stroke color of the composable.
-   * @param style The style of the animation.
+   * @param geminiAnimationSpec The spec of the animation.
    */
   @Composable
-  fun applyEnergyEffectsAnimation(
-    cornerRadius: CornerRadius,
-    strokeColor: Color,
-    style: AnimationStyle = AnimationStyle.CHIP,
-  ): Modifier = applyEnergyEffectsAnimation(cornerRadius, strokeColor, style, fallback = { this })
+  fun Modifier.applyEnergyEffectsAnimation(geminiAnimationSpec: GeminiAnimationSpec): Modifier =
+    applyEnergyEffectsAnimation(geminiAnimationSpec, fallback = { this })
+
+  /**
+   * Returns a themed [Drawable] that applies the effects animation and starts the animation
+   * sequence, or null if not supported.
+   *
+   * @param view The view to attach the animation to and resolve theme colors/resources.
+   * @param geminiAnimationSpec The spec of the animation.
+   */
+  fun getAndStartEffectsDrawable(view: View, geminiAnimationSpec: GeminiAnimationSpec): Drawable? =
+    null
 }
